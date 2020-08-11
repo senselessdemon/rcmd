@@ -401,7 +401,7 @@ local Commands = {
 					"To report issues, create one on our repository.",
 					"You may also contrubute to rCMD there.",
 					"rCMD's Repository: https://github.com/senslessdemon/rcmd",
-					"Our Discord server: https://discord.gg/FYYET36"
+					"Our Discord server: https://discord.io/demonden"
 				}
 				for _, message in ipairs(help) do
 					commandSystem.terminal:addText(message)
@@ -2691,7 +2691,7 @@ end
 
 
 -- you've made it this far, so might as well join our discord :D
--- https://discord.gg/FYYET36
+-- https://discord.io/demonden
 
 local commandSystem = CommandSystem.new()
 
