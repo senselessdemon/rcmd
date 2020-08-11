@@ -43,7 +43,16 @@ function getIdentity()
 	repeat wait() until currentIdentity
 	messageConnection:Disconnect()
 
-	return tonumber(currentIdentity) or 2
+	return currentIdentity or 2
+end
+
+function getExecutor()
+	local executor = "Unknown"
+	if syn then
+		executor = "Synapse X"
+	elseif proto then
+		executor = "Protosmasher"
+	end
 end
 
 local Themes = {
@@ -996,28 +1005,28 @@ local Commands = {
 		},
 		process = function(self, arguments, commandSystem)
 			local character = localPlayer.Character
-			if character then
-				if commandSystem.cache:get("annoy") then
+			local victimCharacter = arguments.victim.Character
+			if arguments.victim ~= localPlayer and character and victimCharacter then
+				local existingAnnoy = commandSystem.cache:get("annoy")
+				if existingAnnoy then
+					existingAnnoy:Disconnect()
 					commandSystem.cache:remove("annoy")
 				end
 
 				RunService.RenderStepped:Wait()
-				commandSystem.cache:set("annoy", true)
-
-				local renderConnection
-				renderConnection = RunService.RenderStepped:Connect(function()
-					if not commandSystem.cache:get("annoy") then
-						return renderConnection:Disconnect()
+				commandSystem.cache:set("annoy", RunService.RenderStepped:Connect(function()
+					if character and character.PrimaryPart and victimCharacter and victimCharacter.PrimaryPart then
+						character:SetPrimaryPartCFrame(CFrame.new(victimCharacter.PrimaryPart.Position, victimCharacter:FindFirstChildWhichIsA("BasePart").Position))
 					end
-					
-					if character.PrimaryPart then
-						character:SetPrimaryPartCFrame(character.PrimaryPart.CFrame * CFrame.Angles(0, math.rad(0), 0) * CFrame.new(0, 0, 0))
-					end
-				end)
+				end))
 			end
 		end,
 		reverseProcess = function(self, arguments, commandSystem)
-			self.cache:remove("annoy")
+			local existingAnnoy = commandSystem.cache:get("annoy")
+			if existingAnnoy then
+				existingAnnoy:Disconnect()
+				commandSystem.cache:remove("annoy")
+			end
 		end
 	},
 
@@ -1141,13 +1150,15 @@ local Commands = {
 			if mouse1press and mouse1release then
 				RunService.RenderStepped:Wait()
 			
-				local updateThreshold = 1 / ((arguments.clicksPerSecond or 1) / 2)
+				local updateThreshold = 1 / ((arguments.clicksPerSecond or 1) * 2)
 				local mouseDown = false
 				local lastClick = 0
 				commandSystem.cache:set("autoClick", RunService.RenderStepped:Connect(function()
 					local deltaTime = tick() - lastClick
-					if deltaTime >= 1 / updateThreshold then
+					if deltaTime >= updateThreshold then
 						(mouseDown and mouse1release or mouse1press)()
+						mouseDown = not mouseDown
+						lastClick = tick()
 					end
 				end))
 			else
