@@ -52,6 +52,7 @@ local Themes = {
 		controlRoundness = UDim.new(0.5, 0),
 		roundness = UDim.new(0, 5),
 		background = Color3.fromRGB(235, 235, 240),
+		headerBackground = Color3.fromRGB(235, 235, 240),
 		text = Color3.fromRGB(0, 0, 0),
 		textBox = Color3.fromRGB(84, 84, 86),
 		boxPrefix = Color3.fromRGB(0, 0, 0),
@@ -65,6 +66,7 @@ local Themes = {
 		controlRoundness = UDim.new(0.5, 0),
 		roundness = UDim.new(0, 5),
 		background = Color3.fromRGB(36, 36, 38),
+		headerBackground = Color3.fromRGB(36, 36, 38),
 		text = Color3.fromRGB(255, 255, 255),
 		textBox = Color3.fromRGB(216, 216, 220),
 		boxPrefix = Color3.fromRGB(255, 255, 255),
@@ -78,6 +80,7 @@ local Themes = {
 		controlRoundness = UDim.new(0.5, 0),
 		roundness = UDim.new(0, 5),
 		background = Color3.fromRGB(40, 42, 54),
+		headerBackground = Color3.fromRGB(40, 42, 54),
 		text = Color3.fromRGB(248, 248, 242),
 		textBox = Color3.fromRGB(241, 250, 140),
 		boxPrefix = Color3.fromRGB(255, 121, 198),
@@ -91,6 +94,7 @@ local Themes = {
 		controlRoundness = UDim.new(0.5, 0),
 		roundness = UDim.new(0, 5),
 		background = Color3.fromRGB(40, 42, 52),
+		headerBackground = Color3.fromRGB(40, 42, 52),
 		text = Color3.fromRGB(127, 169, 92),
 		textBox = Color3.fromRGB(155, 78, 85),
 		boxPrefix = Color3.fromRGB(127, 92, 194),
@@ -104,6 +108,7 @@ local Themes = {
 		controlRoundness = UDim.new(0.5, 0),
 		roundness = UDim.new(0, 5),
 		background = Color3.fromRGB(20, 19, 35),
+		headerBackground = Color3.fromRGB(20, 19, 35),
 		text = Color3.fromRGB(248, 248, 242),
 		textBox = Color3.fromRGB(140, 225, 213),
 		boxPrefix = Color3.fromRGB(98, 120, 131),
@@ -117,12 +122,27 @@ local Themes = {
 		controlRoundness = UDim.new(0, 0),
 		roundness = UDim.new(0, 0),
 		background = Color3.fromRGB(31, 31, 31),
+		headerBackground = Color3.fromRGB(31, 31, 31),
 		text = Color3.fromRGB(235, 235, 235),
 		textBox = Color3.fromRGB(210, 210, 210),
 		boxPrefix = Color3.fromRGB(255, 255, 255),
 		suggestion = Color3.fromRGB(178, 178, 178),
 		transparency = 0.5,
 		shadow = false,
+	},
+	
+	omega = {
+		controlAlignment = Enum.HorizontalAlignment.Right,
+		controlRoundness = UDim.new(0, 0),
+		roundness = UDim.new(0, 0),
+		background = Color3.fromRGB(46, 46, 47),
+		headerBackground = Color3.fromRGB(36, 36, 37),
+		text = Color3.fromRGB(235, 235, 235),
+		textBox = Color3.fromRGB(210, 210, 210),
+		boxPrefix = Color3.fromRGB(255, 255, 255),
+		suggestion = Color3.fromRGB(178, 178, 178),
+		transparency = 0,
+		shadow = true,
 	}
 }
 
@@ -1687,7 +1707,7 @@ function Window:build(parent, size, position)
 	header.Name = "Header"
 	header.Size = UDim2.new(1, 0, 0, 25)
 	header.BorderSizePixel = 0
-	self.handler.themeSyncer:bindElement(header, "BackgroundColor3", "background")
+	self.handler.themeSyncer:bindElement(header, "BackgroundColor3", "headerBackground")
 	self.handler.themeSyncer:bindElement(header, "BackgroundTransparency", "transparency")
 	
 	headerCorner.Name = "Corner"
@@ -1787,7 +1807,14 @@ function Window:build(parent, size, position)
 	self.handler.themeSyncer:bindElement(closeCorner, "CornerRadius", "controlRoundness")
 	self.handler.themeSyncer:bindElement(minimizeCorner, "CornerRadius", "controlRoundness")
 	self.handler.themeSyncer:bindElement(maximizeCorner, "CornerRadius", "controlRoundness")
-
+	
+	controlsLayout:GetPropertyChangedSignal("HorizontalAlignment"):Connect(function()
+		local isRight = controlsLayout.HorizontalAlignment == Enum.HorizontalAlignment.Right
+		closeButton.Name = isRight and "3" or "1"
+		minimizeButton.Name = isRight and "2" or "2"
+		maximizeButton.Name = isRight and "1" or "3"
+	end)
+	
 	local toAdd = {
 		container = container,
 		window = window,
