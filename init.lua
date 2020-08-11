@@ -43,7 +43,7 @@ function getIdentity()
 	repeat wait() until currentIdentity
 	messageConnection:Disconnect()
 
-	return currentIdentity
+	return tonumber(currentIdentity) or 2
 end
 
 local Themes = {
@@ -2183,7 +2183,7 @@ function Terminal:init()
 		self:build()
 	end
 	
-	self:addText(("rCMD [%s]\n(c) 2020 SenselessDemon. All rights reserved."):format(VERSION))
+	self:addText(("rCMD [%s] - level %d\n(c) 2020 SenselessDemon. All rights reserved."):format(VERSION, getIdentity()))
 	self:addPrompt()
 end
 
@@ -2641,7 +2641,7 @@ function CommandSystem.new(terminal)
 		location = localPlayer,
 		parser = Parser.new(),
 		inputBinder = InputBinder.new(),
-		sandbox = Sandbox.new(getfenv(0)),
+		sandbox = Sandbox.new(getfenv(0)), -- just gets the global environment, so chill dude
 		commands = Commands or {},
 		playerTypes = PlayerTypes,
 		argumentTypes = ArgumentTypes,
@@ -2665,13 +2665,15 @@ end
 
 -- you've made it this far, so might as well join our discord :D
 -- https://discord.gg/FYYET36
+
 local commandSystem = CommandSystem.new()
 
 pcall(function()
 	commandSystem.windowHandler.gui.Parent = CoreGui
 end)
 
--- don't worry, this script doesn't have any of that getfenv obfuscated stuff
+-- if you were looking for any of that obfuscated getfenv stuff, you just got caught laking
+-- this script doesnt have any of that stuff, so chill
 -- i'm not that type of guy
 
 -- SenslessDemon
