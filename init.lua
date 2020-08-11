@@ -1,7 +1,7 @@
 -- SenslessDemon
 
-local AUTO_TEXT_RESIZE = true -- in BETA right now
-local VERSION = "v0.2.0"
+local AUTO_TEXT_RESIZE = true
+local VERSION = "v0.2.1"
 
 local startTime = tick()
 
@@ -24,6 +24,7 @@ local localPlayer = Players.LocalPlayer
 
 local playerGui = localPlayer:WaitForChild("PlayerGui")
 local playerScripts = localPlayer:WaitForChild("PlayerScripts")
+local backpack = localPlayer:WaitForChild("Backpack")
 
 local camera = Workspace.CurrentCamera
 local mouse = localPlayer:GetMouse()
@@ -267,7 +268,7 @@ local ArgumentTypes = {
 	{
 		calls = {"number"},
 		process = function(argument)
-			return tonumber(argument) or 0
+			return tonumber(argument.raw) or 0
 		end
 	},
 
@@ -422,6 +423,10 @@ local Commands = {
 				end
 			else
 				local command = arguments.command
+				if command.hidden and not arguments.core.force then
+					return commandSystem.terminal:addText("I do not understand what command you are talking about bro")
+				end
+				
 				local arguments = {}
 				for index, argument in ipairs(command.arguments or {}) do
 					local display = (argument.optional and "" or "*") .. argument.name
@@ -440,6 +445,7 @@ local Commands = {
 					"Aliases: { " .. table.concat(command.aliases or {"none"}, ", ") .. " }",
 					"Opposites: { " .. table.concat({"un"..command.name, unpack(command.opposites or {})}, ", ") .. " }",
 					"Arguments: { " .. table.concat(arguments, ", ") .. " }",
+					"Replicates: { " .. (command.noReplication and "no" or "yes"),
 					"Reversable: " .. (command.reverseProcess and "yes" or "no")
 				}
 
@@ -456,7 +462,9 @@ local Commands = {
 		aliases = {"cmds"},
 		process = function(self, arguments, commandSystem)
 			for _, command in pairs(commandSystem.commands) do
-				commandSystem.terminal:addText(("%s - %s"):format(command.name, command.description or "No description"))
+				if not command.hidden then
+					commandSystem.terminal:addText(("%s - %s"):format(command.name, command.description or "No description"))
+				end
 			end
 		end,
 	},
@@ -733,9 +741,106 @@ local Commands = {
 			}, true)
 		end
 	},
+	
+	{
+		name = "walkSpeed",
+		description = "Sets the local character's speed",
+		aliases = {"ws", "speed"},
+		arguments = {
+			{
+				name = "speed",
+				type = "number"
+			}
+		},
+		process = function(self, arguments, commandSystem)
+			local character = localPlayer.Character
+			if character then
+				local humanoid = character:FindFirstChild("Humanoid")
+				if humanoid then
+					commandSystem.cache:set("lastSpeed", humanoid.WalkSpeed)
+					humanoid.WalkSpeed = arguments.speed
+				end
+			end
+		end,
+		reverseProcess = function(self, arguments, commandSystem)
+			local character = localPlayer.Character
+			if character then
+				local humanoid = character:FindFirstChild("Humanoid")
+				if humanoid then
+					humanoid.WalkSpeed = commandSystem.cache:get("lastSpeed") or 16
+				end
+			end
+		end
+	},
+
+	{
+		name = "jumpPower",
+		description = "Sets the local character's jump power",
+		aliases = {"jp"},
+		arguments = {
+			{
+				name = "power",
+				type = "number"
+			}
+		},
+		process = function(self, arguments, commandSystem)
+			local character = localPlayer.Character
+			if character then
+				local humanoid = character:FindFirstChild("Humanoid")
+				if humanoid then
+					commandSystem.cache:set("lastJumpPower", humanoid.JumpPower)
+					humanoid.JumpPower = arguments.power
+				end
+			end
+		end,
+		reverseProcess = function(self, arguments, commandSystem)
+			local character = localPlayer.Character
+			if character then
+				local humanoid = character:FindFirstChild("Humanoid")
+				if humanoid then
+					humanoid.JumpPower = commandSystem.cache:get("lastJumpPower") or 50
+				end
+			end
+		end
+	},
+	
+	{
+		name = "invisiblility",
+		noReplication = true,
+		description = "Sets the local character's invisibility",
+		aliases = {"invisible"},
+		arguments = {
+			{
+				name = "enabled",
+				type = "boolean"
+			}
+		},
+		process = function(self, arguments, commandSystem)
+			local character = localPlayer.Character
+			if character then
+				local transparency = arguments.enabled and 1 or 0
+				for _, child in ipairs(character:GetChildren()) do
+					if child:IsA("BasePart") then
+						child.Transparency = transparency
+						if child:FindFirstChild("face") then
+							child.face.Transparency = transparency
+						end
+					elseif child:IsA("Accoutrement") or child:FindFirstChild("Handle") then
+						child.Handle.Transparency = transparency
+					elseif child.Name == "Head" then
+						local face = child:FindFirstChildOfClass("Decal")
+						if face then
+							face.Transparency = transparency
+						end
+					end
+				end
+			end
+		end,
+	},
 
 	{
 		name = "bang",
+		hidden = true, -- stfu
 		description = "I'm sorry god",
 		aliases = {"rape"},
 		arguments = {
@@ -753,7 +858,7 @@ local Commands = {
 			if commandSystem.cache:get("bang") then
 				commandSystem.cache:remove("bang")
 			end
-			
+
 			local character = localPlayer.Character
 			if character then
 				local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
@@ -2286,11 +2391,16 @@ end
 
 function WindowHandler.new(parent, theme)
 	local self = setmetatable({
-		gui = Instance.new("ScreenGui", parent or playerGui),
+		gui = Instance.new("ScreenGui"),
 		windows = {},
 		themeSyncer = ThemeSyncer.new(theme)
 	}, WindowHandler)
-
+	
+	if syn then
+		syn.protect_gui(self.gui)
+	end
+	
+	self.gui.Parent = parent or playerGui
 	self.gui.DisplayOrder = 9e9
 	self.gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
@@ -2551,8 +2661,10 @@ function CommandSystem:getTargets(argument, command)
 	return targets
 end
 
-function CommandSystem:parseArguments(command, arguments)
-	local finalArguments = {}
+function CommandSystem:parseArguments(command, arguments, coreArguments)
+	local finalArguments = {
+		core = {}
+	}
 	command.arguments = command.arguments or {}
 	for index, argument in pairs(command.arguments or {}) do
 		if typeof(argument) == "string" then
@@ -2581,6 +2693,10 @@ function CommandSystem:parseArguments(command, arguments)
 				end
 			end
 		end
+	end
+
+	for _, coreArgument in ipairs(coreArguments or {}) do
+		finalArguments.core[coreArgument] = true
 	end
 	
 	return finalArguments
@@ -2616,6 +2732,10 @@ function CommandSystem:findCommand(call)
 end
 
 function CommandSystem:executeCommand(command, processType, arguments, isNested)
+	if command.requiresTool and not (backpack:FindFirstChildOfClass("Tool") or backpack:FindFirstChildOfClass("HopperBin")) then
+		return self:error("You must have a tool to use this command")
+	end
+	
 	local task = Task.new(command[processType])
 	task.yields = true
 	task.thread = false
@@ -2638,7 +2758,7 @@ function CommandSystem:executeTree(tree)
 		local command, processType = self:findCommand(batch.command)
 		if command then
 			if command[processType] then
-				local arguments = self:parseArguments(command, batch.arguments)
+				local arguments = self:parseArguments(command, batch.arguments, batch.coreArguments)
 				if arguments then
 					self:executeCommand(command, processType, arguments)
 				end
