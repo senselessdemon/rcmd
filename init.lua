@@ -1,7 +1,7 @@
 -- SenslessDemon
 
 local SELECTABLE_TEXT = true
-local VERSION = "v0.1.5"
+local VERSION = "v0.1.9"
 
 local startTime = tick()
 
@@ -1668,7 +1668,7 @@ function Window:build(parent, size, position)
 	local title = Instance.new("TextLabel", header)
 	local controls = Instance.new("Frame", header)
 	local controlsLayout = Instance.new("UIListLayout", controls)
-	
+
 	container.Name = self.name or "Window"
 	container.BackgroundTransparency = 1
 	container.Size = size or UDim2.new(0, 400, 0, 250)
@@ -1676,7 +1676,7 @@ function Window:build(parent, size, position)
 		0, (camera.ViewportSize.X - container.AbsoluteSize.X) / 2,
 		0, (camera.ViewportSize.Y - container.AbsoluteSize.Y) / 2
 	)
-	
+
 	window.Name = "Content"
 	window.ZIndex = 2
 	window.Size = UDim2.new(1, 0, 1, 0)
@@ -1686,7 +1686,7 @@ function Window:build(parent, size, position)
 
 	uiCorner.Name = "Corner"
 	self.handler.themeSyncer:bindElement(uiCorner, "CornerRadius", "roundness")
-	
+
 	shadow.Name = "Shadow"
 	shadow.Image = "rbxassetid://1113384364"
 	shadow.ScaleType = Enum.ScaleType.Slice
@@ -1697,7 +1697,7 @@ function Window:build(parent, size, position)
 	shadow.BackgroundTransparency = 1
 	shadow.ImageTransparency = 0.75
 	self.handler.themeSyncer:bindElement(shadow, "Visible", "shadow")
-	
+
 	body.Name = "Body"
 	body.Size = UDim2.new(1, 0, 1, -25)
 	body.Position = UDim2.new(0, 0, 0, 25)
@@ -1709,10 +1709,10 @@ function Window:build(parent, size, position)
 	header.BorderSizePixel = 0
 	self.handler.themeSyncer:bindElement(header, "BackgroundColor3", "headerBackground")
 	self.handler.themeSyncer:bindElement(header, "BackgroundTransparency", "transparency")
-	
+
 	headerCorner.Name = "Corner"
 	self.handler.themeSyncer:bindElement(headerCorner, "CornerRadius", "roundness")
-	
+
 	resizeButton.Name = "ResizeButton"
 	resizeButton.Position = UDim2.new(1, -10, 1, -10)
 	resizeButton.Size = UDim2.new(0, 10+5, 0, 10+5)
@@ -1784,37 +1784,37 @@ function Window:build(parent, size, position)
 	local closeButton = Instance.new("TextButton", controls)
 	local minimizeButton = Instance.new("TextButton", controls)
 	local maximizeButton = Instance.new("TextButton", controls)
-	
+
 	local closeCorner = Instance.new("UICorner", closeButton)
 	local minimizeCorner = Instance.new("UICorner", minimizeButton)
 	local maximizeCorner = Instance.new("UICorner", maximizeButton)
-	
+
 	closeButton.Name = "1"
 	closeButton.Size = UDim2.new(0, 15, 0, 15)
 	closeButton.BackgroundColor3 = Color3.fromRGB(252, 87, 83)
 	closeButton.Text = ""
-	
+
 	minimizeButton.Name = "2"
 	minimizeButton.Size = UDim2.new(0, 15, 0, 15)
 	minimizeButton.BackgroundColor3 = Color3.fromRGB(253, 188, 64)
 	minimizeButton.Text = ""
-	
+
 	maximizeButton.Name = "3"
 	maximizeButton.Size = UDim2.new(0, 15, 0, 15)
 	maximizeButton.BackgroundColor3 = Color3.fromRGB(51, 199, 72)
 	maximizeButton.Text = ""
-	
+
 	self.handler.themeSyncer:bindElement(closeCorner, "CornerRadius", "controlRoundness")
 	self.handler.themeSyncer:bindElement(minimizeCorner, "CornerRadius", "controlRoundness")
 	self.handler.themeSyncer:bindElement(maximizeCorner, "CornerRadius", "controlRoundness")
-	
+
 	controlsLayout:GetPropertyChangedSignal("HorizontalAlignment"):Connect(function()
 		local isRight = controlsLayout.HorizontalAlignment == Enum.HorizontalAlignment.Right
 		closeButton.Name = isRight and "3" or "1"
 		minimizeButton.Name = isRight and "2" or "2"
 		maximizeButton.Name = isRight and "1" or "3"
 	end)
-	
+
 	local toAdd = {
 		container = container,
 		window = window,
@@ -1996,7 +1996,7 @@ function Dock:build()
 	dock.Size = UDim2.new(1, 0, 0, (self.size or 25) * 2)
 	dock.AnchorPoint = Vector2.new(0.5, 0.5)
 	dock.BackgroundTransparency = 1
-	
+
 	dockLayout.Name = "Layout"
 	dockLayout.FillDirection = Enum.FillDirection.Horizontal
 	dockLayout.VerticalAlignment = Enum.VerticalAlignment.Center
@@ -2073,13 +2073,13 @@ function Terminal:addText(text, color, isPrompt)
 	if not text then
 		return
 	end
-	
+
 	local textLabel = self.window:add("TextLabel", self.content)
-	
+
 	if typeof(text) == "string" and script then
 		text = text:gsub(script:GetFullName(), "rCMD")
 	end
-	
+
 	textLabel.Name = #self.content:GetChildren()
 	textLabel.Text = text
 	textLabel.TextSize = self.textSize or 16
@@ -2157,11 +2157,11 @@ function Terminal:addPrompt(givenPrefix, callback)
 		if table.find(inputs, input.KeyCode) and focused then
 			callbackProxy()
 		end
-	end)	
+	end)
 	inputConnections.onScreenKeyboard = box.ReturnPressedFromOnScreenKeyboard:Connect(function()
 		callbackProxy()
 	end)
-	
+
 	if box.AbsolutePosition.Y > self.content.AbsolutePosition.Y + self.content.AbsoluteSize.Y then
 		self.content.CanvasPosition = Vector2.new(
 			0,
@@ -2193,7 +2193,7 @@ function Terminal:build()
 	contentLayout.VerticalAlignment = Enum.VerticalAlignment.Top	
 	contentLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
-		
+
 	local toAdd = {
 		window = window,
 		content = content,
@@ -2209,7 +2209,7 @@ function Terminal:init()
 	if not self.window then
 		self:build()
 	end
-	
+
 	self:addText(("rCMD [%s] - level %d\n(c) 2020 SenselessDemon. All rights reserved."):format(VERSION, getIdentity()))
 	self:addPrompt()
 end
@@ -2220,7 +2220,7 @@ function Terminal.new(handler, defaultCallback)
 		inputBinder = InputBinder.new(),
 		textSize = 15
 	}, Terminal)
-	
+
 	self.inputBinder:bind({Enum.KeyCode.LeftControl, Enum.KeyCode.Equals}, function()
 		if self.content then
 			for _, descendant in ipairs(self.content:GetDescendants()) do
@@ -2239,7 +2239,7 @@ function Terminal.new(handler, defaultCallback)
 			end
 		end
 	end)
-	
+
 	self.defaultCallback = defaultCallback or function(entry)
 		self:addPrompt()
 	end
@@ -2267,14 +2267,14 @@ function WindowHandler.new(parent, theme)
 		windows = {},
 		themeSyncer = ThemeSyncer.new(theme)
 	}, WindowHandler)
-	
+
 	self.gui.DisplayOrder = 9e9
 	self.gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-	
+
 	if not self.dock then
 		self.dock = Dock.new(self)
 	end
-	
+
 	return self
 end
 
@@ -2402,7 +2402,7 @@ function Parser:parse(data, requiresPrefix)
 	data = data:gsub("\n", ""):gsub("\t", "")
 
 	for batchIndex, rawBatch in ipairs(data:split(self.options.batchKey)) do
-
+		rawBatch = self:trim(rawBatch)
 		if rawBatch:sub(1, #self.options.prefix) == self.options.prefix then
 			rawBatch = rawBatch:sub(#self.options.prefix)
 		else
