@@ -1,6 +1,6 @@
 <h1 align="center">rCMD</h1>
 <div align="center">
-	<a href="https://discord.gg/FYYET36">
+	<a href="https://discord.io/demonden">
 		<img src="https://img.shields.io/badge/discord-server-blue.svg" alt="Discord" />
 	</a>
 </div>
