@@ -1,7 +1,7 @@
 -- SenslessDemon
 
-local SELECTABLE_TEXT = true
-local VERSION = "v0.1.9"
+local AUTO_TEXT_RESIZE = true -- in BETA right now
+local VERSION = "v0.2.0"
 
 local startTime = tick()
 
@@ -47,12 +47,15 @@ function getIdentity()
 end
 
 function getExecutor()
-	local executor = "Unknown"
+	local executor = "unknown"
 	if syn then
 		executor = "Synapse X"
 	elseif proto then
 		executor = "Protosmasher"
+	elseif sirhurt then
+		executor = "SirHurt"
 	end
+	return executor
 end
 
 local Themes = {
@@ -404,6 +407,8 @@ local Commands = {
 			if not arguments.command then
 				local help = {
 					"rCMD " .. VERSION,
+					"Your executor is " .. getExecutor(),
+					"This script is running at level " .. getIdentity(),
 					"To view a list of commands, enter \"cmds\"",
 					"To view info on a specific command, enter \"help [command]\"",
 					"If you require further assistance, contact us",
@@ -799,7 +804,7 @@ local Commands = {
 					end
 				end
 			else
-				self.terminal:addText("Your exploit does not support the firing of click-detectors")
+				commandSystem.terminal:addText("Your exploit does not support the firing of click-detectors")
 			end
 		end
 	},
@@ -1162,7 +1167,7 @@ local Commands = {
 					end
 				end))
 			else
-				self.terminal:addText("Your exploit does not have the ability to force mouse input")
+				commandSystem.terminal:addText("Your exploit does not have the ability to force mouse input")
 			end
 		end,
 		reverseProcess = function(self, arguments, commandSystem)
@@ -1860,9 +1865,9 @@ end
 function Window:add(originalClass, data)
 	local class = originalClass
 
-	if class == "TextLabel" then
+	--[[if class == "TextLabel" then
 		class = "TextBox"
-	end
+	end]]
 
 	local object = Instance.new(class, self.body)
 
@@ -1874,10 +1879,10 @@ function Window:add(originalClass, data)
 		object.Parent = data
 	end
 
-	if originalClass == "TextLabel" then
+	--[[if originalClass == "TextLabel" then
 		object.ClearTextOnFocus = false
 		object.TextEditable = false
-	end
+	end]]
 
 	return object
 end
@@ -2065,6 +2070,12 @@ function Terminal:connectBoundsUpdate(object, callback)
 
 	object:GetPropertyChangedSignal("Text"):Connect(callbackProxy)
 	object:GetPropertyChangedSignal("TextSize"):Connect(callbackProxy)
+
+	if AUTO_TEXT_RESIZE then
+		self.content:GetPropertyChangedSignal("AbsoluteSize"):Connect(callbackProxy)
+		self.content:GetPropertyChangedSignal("CanvasSize"):Connect(callbackProxy)
+	end
+
 	callbackProxy()
 end
 
@@ -2074,7 +2085,7 @@ function Terminal:getBounds(object, text, maxSize)
 		object.TextSize,
 		object.Font,
 		maxSize or Vector2.new(
-			self.content.CanvasSize.X.Offset - self.content.ScrollBarThickness,
+			self.content.CanvasSize.X.Offset,
 			9e6
 		)
 	)
@@ -2104,7 +2115,8 @@ function Terminal:addText(text, color, isPrompt)
 	self:connectBoundsUpdate(textLabel, function()
 		local bounds = self:getBounds(textLabel, textLabel.Text)
 		textLabel.Size = UDim2.new(1, -self.content.ScrollBarThickness, 0, bounds.Y)
-		textLabel.TextSize = self.textSize or 16
+		textLabel.TextScaled = not textLabel.TextScaled
+		textLabel.TextScaled = not textLabel.TextScaled
 	end)
 
 	if isPrompt then
