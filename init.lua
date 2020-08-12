@@ -1,8 +1,12 @@
 -- SenslessDemon
 
+if _G.rCMD and _G.rCMD.running then
+	return error("rCMD is already running!")
+end
+
 local AUTO_TEXT_RESIZE = true
 local DYNAMIC_TERMINAL = false -- don't enable this please
-local VERSION = "v0.2.4"
+local VERSION = "v0.2.5"
 
 local startTime = tick()
 
@@ -420,8 +424,37 @@ local Commands = {
 		description = "Opens a new terminal",
 		arguments = {},
 		process = function(self, arguments, commandSystem)
-			commandSystem.terminal = commandSystem.terminal.class.new(commandSystem.windowHandler)
+			commandSystem.terminal = commandSystem.classes.Terminal.new(commandSystem.windowHandler)
 		end,
+	},
+
+	{
+		name = "advertise",
+		description = "Advertises rCMD. Thanks for the support!",
+		aliases = {"adv"},
+		process = function(self, arguments, commandSystem)
+			if commandSystem.cache:get("advertise") then
+				commandSystem.cache:get("advertise"):Disconnect()
+				commandSystem.cache:remove("advertise")
+			end
+
+			RunService.RenderStepped:Wait()
+
+			local message = "Get rCMD: The best admin script! Our disquord is FYYET36!"
+			local updateThreshold = 5
+			local lastMessage = 0
+			commandSystem.cache:set("advertise", RunService.RenderStepped:Connect(function()
+				local deltaTime = tick() - lastMessage
+				if deltaTime >= updateThreshold then
+					ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(message, "All")
+					lastMessage = tick()
+				end
+			end))
+		end,
+		reverseProcess = function(self, arguments, commandSystem)
+			commandSystem.cache:get("advertise"):Disconnect()
+			commandSystem.cache:remove("advertise")
+		end
 	},
 
 	{
@@ -441,6 +474,14 @@ local Commands = {
 		description = "Allows you to rejoin the game",
 		process = function(self, arguments, commandSystem)
 			TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, localPlayer)
+		end,
+	},
+	
+	{
+		name = "close",
+		description = "Closes  (until executed again)",
+		process = function(self, arguments, commandSystem)
+			commandSystem:shutdown()
 		end,
 	},
 
@@ -2433,7 +2474,6 @@ end
 
 
 local Terminal = {}
-Terminal.class = Terminal
 Terminal.__index = Terminal
 
 function Terminal:updateSize()
@@ -3057,6 +3097,14 @@ function CommandSystem:createList(name, listData)
 	end
 end
 
+function CommandSystem:shutdown()
+	self.windowHandler.gui:Destroy()
+	if script then
+		script:Destroy()
+	end
+	_G.rCMD = nil
+end
+
 function CommandSystem:getTargets(argument, command)
 	local targets = {}
 
@@ -3297,6 +3345,10 @@ local commandSystem = CommandSystem.new()
 pcall(function()
 	commandSystem.windowHandler.gui.Parent = CoreGui
 end)
+
+_G.rCMD = {
+	running = true,
+}
 
 -- if you were looking for any of that obfuscated getfenv stuff, you just got caught laking
 -- this script doesnt have any of that stuff, so chill
