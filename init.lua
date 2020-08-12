@@ -2,7 +2,7 @@
 
 local AUTO_TEXT_RESIZE = true
 local DYNAMIC_TERMINAL = false -- don't enable this please
-local VERSION = "v0.2.2"
+local VERSION = "v0.2.4"
 
 local startTime = tick()
 
