@@ -1,7 +1,8 @@
 -- SenslessDemon
 
 local AUTO_TEXT_RESIZE = true
-local VERSION = "v0.2.2"
+local DYNAMIC_TERMINAL = false -- don't enable this please
+local VERSION = "v0.2.3"
 
 local startTime = tick()
 
@@ -1614,51 +1615,119 @@ end
 local MouseHover = {}
 MouseHover.__index = MouseHover
 
-function MouseHover:addElement(uiElement)
+function MouseHover:determineBounds(text)
+	local bounds = TextService:GetTextSize(
+		text,
+		self.label.TextSize,
+		self.label.Font,
+		Vector2.new(
+			math.max(camera.ViewportSize.X / 4, 200),
+			camera.ViewportSize.Y
+		)
+	)
+	return bounds
+end
+
+function MouseHover:addElement(uiElement, hoverText)
 	self.connections[uiElement] = {
 		mouseEnter = uiElement.MouseEnter:Connect(function()
 			uiElement.MouseMoved:Connect(function(mouseX, mouseY)
-				self.textLabel.Text = uiElement.Hover.Value
+				self.label.Text = hoverText or uiElement.Hover.Value
 				
-				local xBounds = self.textLabel.TextBounds.X
-				local yBounds = self.textLabel.TextBounds.Y
+				self.label.TextScaled = not self.label.TextScaled -- again, fix roblox bug :\
+				self.label.TextScaled = not self.label.TextScaled
 				
-				self.frame.Size = UDim2.new(0, xBounds+ self.padding*2, 0, yBounds + self.padding*2)
+				local bounds = self:determineBounds(self.label.Text)
+				self.container.Size = UDim2.new(
+					0, bounds.X + self.padding*2,
+					0, bounds.Y + self.padding*2
+				)
 				
 				local mouseOffset
-				if self.frame.AbsoluteSize.Y <= 28 then
-					mouseOffset = (self.frame.AbsoluteSize.Y * 2) - 5
+				if self.container.AbsoluteSize.Y <= self.label.TextSize + self.padding*2 then
+					mouseOffset = self.container.AbsoluteSize.Y*2 - 5
 				else
 					mouseOffset = 60
 				end
+				mouseOffset -= 36
 				
-				if mouseX - self.frame.AbsoluteSize.X >= 0 then
-					self.frame.Position = UDim2.new(
-						0, mouseX - self.frame.AbsoluteSize.X,
-						0, mouseY - self.frame.AbsoluteSize.Y/2 - mouseOffset
+				if mouseX -self.container.AbsoluteSize.X >= 0 then
+					self.container.Position = UDim2.new(
+						0, mouseX - self.container.AbsoluteSize.X,
+						0, mouseY - self.container.AbsoluteSize.Y/2 - mouseOffset
 					)
-				elseif mouseX - self.frame.AbsoluteSize.X <= 0 then
-					self.frame.Position = UDim2.new(
+				elseif mouseX - self.container.AbsoluteSize.X <= 0 then
+					self.container.Position = UDim2.new(
 						0, mouseX,
-						0, mouseY - self.frame.AbsoluteSize.Y/2 - mouseOffset
+						0, mouseY - self.container.AbsoluteSize.Y/2 - mouseOffset
 					)
 				end
 			end)
+		end),
+
+		mouseLeave = uiElement.MouseLeave:Connect(function()
+			self.label.Text = ""
+			self.container.Size = UDim2.new(0, 0, 0, 0)
+			self.container.Position = UDim2.new(2, 0, 2, 0)
 		end)
 	}
 end
 
 function MouseHover:build()
-	local frame = Instance.new("Frame")
+	local container = Instance.new("Frame", self.handler.gui)
+	local shadow = Instance.new("ImageLabel", container)
+	local frame = Instance.new("Frame", container)
+	local corner = Instance.new("UICorner", frame)
 	local label = Instance.new("TextLabel", frame)
 	
-	frame.Name = "MouseLabel"
-	frame.Size = UDim2.new()
+	container.Name = "MouseLabel"
+	container.BackgroundTransparency = 1
+	container.ZIndex = 9e5
+	
+	frame.Name = "Content"
+	frame.Size = UDim2.new(1, 0, 1, 0)
+	frame.BorderSizePixel = 0
+	self.handler.themeSyncer:bindElement(frame, "BackgroundColor3", "headerBackground")
+	--self.handler.themeSyncer:bindElement(frame, "BackgroundTransparency", "transparency")
+	
+	shadow.Name = "Shadow"
+	shadow.Image = "rbxassetid://1113384364"
+	shadow.ScaleType = Enum.ScaleType.Slice
+	shadow.SliceCenter = Rect.new(50, 50, 50, 50)
+	shadow.Size = UDim2.new(1, 80, 1, 80)
+	shadow.Position = UDim2.new(0.5, 0, 0.5, 0)
+	shadow.AnchorPoint = Vector2.new(0.5, 0.5)
+	shadow.BackgroundTransparency = 1
+	shadow.ImageTransparency = 0.75
+	self.handler.themeSyncer:bindElement(shadow, "Visible", "shadow")
+	
+	corner.Name = "Corner"
+	self.handler.themeSyncer:bindElement(corner, "CornerRadius", "roundness")
 	
 	label.Name = "Label"
-	label.Size = UDim2.new(1, -self.padding, 1, -self.padding)
+	label.Size = UDim2.new(1, -self.padding*2, 1, -self.padding*2)
 	label.Position = UDim2.new(0.5, 0, 0.5, 0)
 	label.AnchorPoint = Vector2.new(0.5, 0.5)
+	label.Font = Enum.Font.Gotham
+	label.TextSize = 16
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.TextYAlignment = Enum.TextYAlignment.Top
+	label.BackgroundTransparency = 1
+	self.handler.themeSyncer:bindElement(label, "TextColor3", "text")
+	
+	local toAdd = {
+		container = container,
+		shadow = shadow,
+		frame = frame,
+		label = label,
+		corner = corner,
+	}
+	
+	for name, object in pairs(toAdd) do
+		self[name] = object
+	end
+	
+	return container
 end
 
 function MouseHover:init()
@@ -1670,12 +1739,12 @@ end
 function MouseHover.new(handler)
 	local self = setmetatable({
 		handler = handler,
-		padding = 5,
+		padding = 7.5,
 		connections = {}
 	}, MouseHover)
-	
+
 	self:init()
-	
+
 	return self
 end
 
@@ -2244,6 +2313,7 @@ function Dock:build()
 	dock.BackgroundTransparency = 1
 
 	dockLayout.Name = "Layout"
+	dockLayout.Padding = UDim.new(0, 10)
 	dockLayout.FillDirection = Enum.FillDirection.Horizontal
 	dockLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 	dockLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
@@ -2543,7 +2613,6 @@ function List:getBounds(object, text, maxSize)
 end
 
 function List:addItem(text, onHover)
-	print(text)
 	if not text then
 		return
 	end
@@ -2571,6 +2640,8 @@ function List:addItem(text, onHover)
 		local hoverIndicator = self.window:add("StringValue", textLabel)
 		hoverIndicator.Name = "Hover"
 		hoverIndicator.Value = onHover
+		
+		self.handler.mouseHover:addElement(textLabel)
 	end
 	
 	TweenService:Create(textLabel, TweenInfo.new(0.5), {
@@ -2655,7 +2726,7 @@ function WindowHandler.new(parent, theme)
 	local self = setmetatable({
 		gui = Instance.new("ScreenGui"),
 		windows = {},
-		themeSyncer = ThemeSyncer.new(theme)
+		themeSyncer = ThemeSyncer.new(theme),
 	}, WindowHandler)
 	
 	if syn then
@@ -2666,7 +2737,10 @@ function WindowHandler.new(parent, theme)
 	self.gui.DisplayOrder = 9e9
 	self.gui.IgnoreGuiInset = true
 	self.gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-
+	
+	if not self.mouseHover then
+		self.mouseHover = MouseHover.new(self)
+	end
 	if not self.dock then
 		self.dock = Dock.new(self)
 	end
