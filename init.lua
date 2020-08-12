@@ -2,7 +2,7 @@
 
 local AUTO_TEXT_RESIZE = true
 local DYNAMIC_TERMINAL = false -- don't enable this please
-local VERSION = "v0.2.3"
+local VERSION = "v0.2.2"
 
 local startTime = tick()
 
@@ -61,6 +61,43 @@ function getExecutor()
 	end
 	return executor
 end
+
+
+local Color3 = setmetatable({
+	toHex = function(color3)
+		local result = "#"
+		
+		for _, element in ipairs({color3.r, color3.g, color3.b}) do
+			local hex = ""
+			element = element * 255
+			
+			while element > 0 do
+				local index = math.fmod(element, 16) + 1
+				element = math.floor(element / 16)
+				hex = ("0123456789abcdef"):sub(index, index) .. hex			
+			end
+	
+			if #hex == 0 then
+				hex = "00"
+			elseif #hex == 1 then
+				hex = "0" .. hex
+			end
+	
+			result = result .. hex
+		end
+		return result
+	end;
+
+	fromHex = function(hex)
+		hex = hex:gsub("#","")
+	    return Color3.fromRGB(
+			tonumber("0x" .. hex:sub(1, 2)),
+			tonumber("0x" .. hex:sub(3, 4)),
+			tonumber("0x" .. hex:sub(5, 6))
+		)
+	end;
+}, {__index = Color3})
+
 
 local Themes = {
 	light = {
@@ -296,6 +333,23 @@ local ArgumentTypes = {
 			return commandSystem:getTargets(argument)[1]
 		end
 	},
+	
+	{
+		calls = {"color", "colour"},
+		process = function(argument, commandSystem)
+			local raw = argument and argument.raw or ""
+			if raw:sub(1, 1) == "#" then
+				return Color3.fromHex(raw)
+			end
+			if argument and #argument.segments == 3 then
+				return Color3.fromRGB(
+					tonumber(argument.segments[1]),
+					tonumber(argument.segments[2]),
+					tonumber(argument.segments[3])
+				)
+			end
+		end
+	},
 
 	{
 		calls = {"theme"},
@@ -436,7 +490,7 @@ local Commands = {
 				for index, argument in ipairs(command.arguments or {}) do
 					local display = (argument.optional and "" or "*") .. argument.name
 					if argument.type then
-						display ..= "[" .. argument.type .. "]"
+						display = display .. "[" .. argument.type .. "]"
 					end
 					arguments[index] = display
 				end
@@ -1301,7 +1355,7 @@ local Commands = {
 		},
 		process = function(self, arguments, commandSystem)
 			if not commandSystem.cache:get("esp") then
-				local esp = ESP.new()
+				local esp = commandSystem.classes.ESP.new()
 				esp:hide()
 				commandSystem.cache:set("esp", esp)
 			end
@@ -1497,42 +1551,63 @@ end
 
 
 local ESP = {}
-ESP.__Index = ESP
+ESP.__index = ESP
 
-function ESP:addCharacter(character, color)
+function ESP:addCharacter(player, color)
+	local character = player.Character
 	if character and not self.container:FindFirstChild(character.Name) then
 		local espHolder = Instance.new("Folder", self.container)
 		espHolder.Name = character.Name
+
 		for _, child in ipairs(character:GetChildren()) do
 			if child:IsA("BasePart") then
 				local indicator = Instance.new("BoxHandleAdornment", espHolder)
 				indicator.Name = child.Name
 				indicator.Adornee = child
+				indicator.ZIndex = 10
 				indicator.AlwaysOnTop = true
+				indicator.Size = child.Size
 				indicator.Transparency = self.visible and 0.3 or 1
-				indicator.Color3 = color
+				indicator.Color3 = color or player.TeamColor.Color
 			end
 		end
+
+		local teamChangeConnection
+		teamChangeConnection = player:GetPropertyChangedSignal("TeamColor"):Connect(function()
+			if not player or not character then
+				return teamChangeConnection:Disconnect()
+			end
+
+			for _, child in ipairs(espHolder and espHolder:GetChildren() or {}) do
+				child.Color3 = color or player.TeamColor.Color
+			end
+		end)
 	end
 end
 
 function ESP:removeCharacter(character)
-	local espHolder = self.container:FindFirstChild(character) or self.container:FindFirstChild(character.Name)
+	local espHolder = self.container:FindFirstChild(character)
 	if espHolder then
 		espHolder:Destroy()
+	end
+
+	if self.connections[character] then
+		self.connections[character]:Disconnect()
+		self.connections[character] = nil
 	end
 end
 
 function ESP:addPlayer(player)
+	if player.Character then
+		self:addCharacter(player, self.color)
+	end
 	self.connections[player.Name] = player.CharacterAdded:Connect(function(character)
-		self:addCharacter(character)
+		self:addCharacter(player, self.color)
 	end)
 end
 
 function ESP:removePlayer(player)
-	if player.Character then
-		self:removeCharacter(player.Name)
-	end
+	self:removeCharacter(player.Name)
 end
 
 function ESP:connect()
@@ -1649,7 +1724,6 @@ function MouseHover:addElement(uiElement, hoverText)
 				else
 					mouseOffset = 60
 				end
-				--mouseOffset -= 36
 				
 				if mouseX -self.container.AbsoluteSize.X >= 0 then
 					self.container.Position = UDim2.new(
@@ -1863,20 +1937,20 @@ function Window:allocateSpace(size, maxCycles)
 	while cycleIndex <= maxCycles and isTaken(position) do
 		local updatedPosition = position + incrementDelta
 		local endPosition = updatedPosition + size
-		
+
 		--[[updatedPosition = Vector2.new(
 			updatedPosition.X % camera.ViewportSize.X,
 			updatedPosition.Y % camera.ViewportSize.Y
 		)]]
-		
+
 		if endPosition.X > camera.ViewportSize.X then
 			updatedPosition = Vector2.new(0, updatedPosition.Y)
 		elseif endPosition.Y > camera.ViewportSize.Y then
 			updatedPosition = Vector2.new(updatedPosition.X, 0)
 		end
-		
+
 		position = updatedPosition
-		cycleIndex += 1
+		cycleIndex = cycleIndex + 1
 	end
 	
 	local anchorPoint = self.container.AnchorPoint
@@ -2380,7 +2454,7 @@ function Terminal:connectBoundsUpdate(object, callback)
 	object:GetPropertyChangedSignal("TextSize"):Connect(callbackProxy)
 
 	if AUTO_TEXT_RESIZE then
-		self.content:GetPropertyChangedSignal("AbsoluteSize"):Connect(callbackProxy)
+		--self.content:GetPropertyChangedSignal("AbsoluteSize"):Connect(callbackProxy)
 		self.content:GetPropertyChangedSignal("CanvasSize"):Connect(callbackProxy)
 	end
 
@@ -2556,7 +2630,7 @@ function Terminal.new(handler, defaultCallback)
 		if self.content then
 			for _, descendant in ipairs(self.content:GetDescendants()) do
 				if descendant:IsA("TextLabel") or descendant:IsA("TextBox") then
-					descendant.TextSize += 2
+					descendant.TextSize = descendant.TextSize + 2
 				end
 			end
 		end
@@ -2565,7 +2639,7 @@ function Terminal.new(handler, defaultCallback)
 		if self.content then
 			for _, descendant in ipairs(self.content:GetDescendants()) do
 				if descendant:IsA("TextLabel") or descendant:IsA("TextBox") then
-					descendant.TextSize -= 2
+					descendant.TextSize = descendant.TextSize - 2
 				end
 			end
 		end
@@ -3177,17 +3251,26 @@ function CommandSystem.new(terminal)
 		location = localPlayer,
 		parser = Parser.new(),
 		inputBinder = InputBinder.new(),
-		sandbox = Sandbox.new({
-			__index = function(_, index)
-				local fromEnvironment = getfenv()[index]
-				if fromEnvironment then
-					return fromEnvironment
-				end
-			end	
-		}), -- just gets the global environment, so chill dude
+		sandbox = Sandbox.new(getfenv()), -- just gets the global environment, so chill dude
 		commands = Commands or {},
 		playerTypes = PlayerTypes,
 		argumentTypes = ArgumentTypes,
+		classes = {
+			ThemeSyncer = ThemeSyncer,
+			InputBinder = InputBinder,
+			Cache = Cache,
+			ESP = ESP,
+			MouseHover = MouseHover,
+			Window = Window,
+			Dock = Dock,
+			Terminal = Terminal,
+			List = List,
+			WindowHandler = WindowHandler,
+			Task = Task,
+			Sandbox = Sandbox,
+			Parser = Parser,
+			CommandSystem = CommandSystem
+		}
 	}, CommandSystem)
 	
 	local function callback(message)
