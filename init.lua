@@ -1,7 +1,7 @@
 -- SenslessDemon
 
 local AUTO_TEXT_RESIZE = true
-local VERSION = "v0.2.1"
+local VERSION = "v0.2.2"
 
 local startTime = tick()
 
@@ -51,10 +51,12 @@ function getExecutor()
 	local executor = "unknown"
 	if syn then
 		executor = "Synapse X"
-	elseif proto then
-		executor = "Protosmasher"
-	elseif sirhurt then
+	elseif proto or pebc_execute then
+		executor = "ProtoSmasher"
+	elseif sirhurt or is_sirhurt_closure then
 		executor = "SirHurt"
+	elseif secure_load then
+		execseutor = "Sentinel"
 	end
 	return executor
 end
@@ -371,9 +373,11 @@ local Commands = {
 		name = "themes",
 		description = "Displays a list of available themes",
 		process = function(self, arguments, commandSystem)
+			local listData = {}
 			for name, theme in pairs(Themes) do
-				commandSystem.terminal:addText(name)
+				listData[#listData+1] = {name}
 			end
+			commandSystem:createList("Themes", listData)
 		end,
 	},
 
@@ -461,11 +465,14 @@ local Commands = {
 		description = "Displays a list of available commands",
 		aliases = {"cmds"},
 		process = function(self, arguments, commandSystem)
+			local listData = {}
 			for _, command in pairs(commandSystem.commands) do
 				if not command.hidden then
-					commandSystem.terminal:addText(("%s - %s"):format(command.name, command.description or "No description"))
+					--commandSystem.terminal:addText(("%s - %s"):format(command.name, command.description or "No description"))
+					listData[#listData+1] = {command.name, command.description or "No description"}
 				end
 			end
+			commandSystem:createList("Commands", listData)
 		end,
 	},
 
@@ -1604,6 +1611,75 @@ end
 ]]
 
 
+local MouseHover = {}
+MouseHover.__index = MouseHover
+
+function MouseHover:addElement(uiElement)
+	self.connections[uiElement] = {
+		mouseEnter = uiElement.MouseEnter:Connect(function()
+			uiElement.MouseMoved:Connect(function(mouseX, mouseY)
+				self.textLabel.Text = uiElement.Hover.Value
+				
+				local xBounds = self.textLabel.TextBounds.X
+				local yBounds = self.textLabel.TextBounds.Y
+				
+				self.frame.Size = UDim2.new(0, xBounds+ self.padding*2, 0, yBounds + self.padding*2)
+				
+				local mouseOffset
+				if self.frame.AbsoluteSize.Y <= 28 then
+					mouseOffset = (self.frame.AbsoluteSize.Y * 2) - 5
+				else
+					mouseOffset = 60
+				end
+				
+				if mouseX - self.frame.AbsoluteSize.X >= 0 then
+					self.frame.Position = UDim2.new(
+						0, mouseX - self.frame.AbsoluteSize.X,
+						0, mouseY - self.frame.AbsoluteSize.Y/2 - mouseOffset
+					)
+				elseif mouseX - self.frame.AbsoluteSize.X <= 0 then
+					self.frame.Position = UDim2.new(
+						0, mouseX,
+						0, mouseY - self.frame.AbsoluteSize.Y/2 - mouseOffset
+					)
+				end
+			end)
+		end)
+	}
+end
+
+function MouseHover:build()
+	local frame = Instance.new("Frame")
+	local label = Instance.new("TextLabel", frame)
+	
+	frame.Name = "MouseLabel"
+	frame.Size = UDim2.new()
+	
+	label.Name = "Label"
+	label.Size = UDim2.new(1, -self.padding, 1, -self.padding)
+	label.Position = UDim2.new(0.5, 0, 0.5, 0)
+	label.AnchorPoint = Vector2.new(0.5, 0.5)
+end
+
+function MouseHover:init()
+	if not self.frame then
+		self:build()
+	end
+end
+
+function MouseHover.new(handler)
+	local self = setmetatable({
+		handler = handler,
+		padding = 5,
+		connections = {}
+	}, MouseHover)
+	
+	self:init()
+	
+	return self
+end
+
+
 local Window = {}
 Window.__index = Window
 
@@ -1683,6 +1759,54 @@ function Window:open()
 	delay(0.1, function()
 		self.container.Visible = true
 	end)
+end
+
+function Window:toAbsolute(size)
+	if typeof(size) == "UDim2" then
+		size = Vector2.new(
+			size.X.Scale * camera.ViewportSize.X + size.X.Offset,
+			size.Y.Scale * camera.ViewportSize.Y + size.Y.Offset
+		)
+	end
+	return size
+end
+
+function Window:allocateSpace(size, maxCycles)
+	size = self:toAbsolute(size or self.container.Size)
+	maxCycles = maxCycles or 50
+	
+	local position = (camera.ViewportSize - size) / 2
+	local incrementDelta = 5
+	
+	local function isTaken(position)
+		for _, window in ipairs(self.handler.windows) do
+			if window.AbsolutePosition == position then
+				return true
+			end
+		end
+		return false
+	end
+	
+	local cycleIndex = 0
+	while cycleIndex >= maxCycles or isTaken(position) do
+		local updatedPosition = position + incrementDelta
+		local endPosition = updatedPosition + size
+		
+		if endPosition.X > camera.ViewportSize.X then
+			updatedPosition = Vector2.new(0, updatedPosition.Y)
+		elseif endPosition.Y > camera.ViewportSize.Y then
+			updatedPosition = Vector2.new(updatedPosition.X, 0)
+		end
+		
+		position = updatedPosition
+		cycleIndex += 1
+	end
+	
+	local anchorPoint = self.container.AnchorPoint
+	self.container.Position = UDim2.new(
+		0, position.X + anchorPoint.X*size.X,
+		0, position.Y + anchorPoint.Y*size.Y
+	)
 end
 
 function Window:runDragging()
@@ -1777,8 +1901,8 @@ function Window:runResizing()
 	end)
 end
 
-function Window:build(parent, size, position)
-	local container = Instance.new("Frame", parent or self.handler.gui)
+function Window:build(size, position)
+	local container = Instance.new("Frame", self.handler.gui)
 	local window = Instance.new("Frame", container)
 	local uiCorner = Instance.new("UICorner", window)
 	local shadow = Instance.new("ImageLabel", window)
@@ -1868,7 +1992,6 @@ function Window:build(parent, size, position)
 	controlsLayout.FillDirection = Enum.FillDirection.Horizontal
 	controlsLayout.SortOrder = Enum.SortOrder.Name
 	controlsLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-	self.handler.themeSyncer:bindElement(controlsLayout, "HorizontalAlignment", "controlAlignment")
 
 	--[[local closeButton = Instance.new("TextButton", controls)
 	local closeIcon = Instance.new("ImageLabel", closeButton)
@@ -1935,6 +2058,7 @@ function Window:build(parent, size, position)
 		minimizeButton.Name = isRight and "2" or "2"
 		maximizeButton.Name = isRight and "1" or "3"
 	end)
+	self.handler.themeSyncer:bindElement(controlsLayout, "HorizontalAlignment", "controlAlignment")
 
 	local toAdd = {
 		container = container,
@@ -1992,9 +2116,10 @@ function Window:add(originalClass, data)
 	return object
 end
 
-function Window:init()
+function Window:init(size)
 	if not self.window then
-		self:build()
+		self:build(size)
+		self:allocateSpace()
 
 		self.buttons.close.MouseButton1Click:Connect(function()
 			self:close()
@@ -2018,7 +2143,7 @@ function Window:init()
 	end
 end
 
-function Window.new(handler, name)
+function Window.new(handler, name, size)
 	local self = setmetatable({
 		handler = handler,
 		name = name,
@@ -2028,7 +2153,7 @@ function Window.new(handler, name)
 		maximized = false,
 	}, Window)
 
-	self:init()
+	self:init(size)
 
 	return self
 end
@@ -2377,6 +2502,143 @@ function Terminal.new(handler, defaultCallback)
 end
 
 
+local List = {}
+List.__index = List
+
+function List:updateSize()
+	local contentSize = self.contentLayout.AbsoluteContentSize
+	self.content.CanvasSize = UDim2.new(
+		0, contentSize.X,
+		0, contentSize.Y
+	)
+end
+
+function List:connectBoundsUpdate(object, callback)
+	local function callbackProxy(...)
+		callback(object, ...)
+		self:updateSize()
+	end
+
+	object:GetPropertyChangedSignal("Text"):Connect(callbackProxy)
+	object:GetPropertyChangedSignal("TextSize"):Connect(callbackProxy)
+
+	if AUTO_TEXT_RESIZE then
+		self.content:GetPropertyChangedSignal("AbsoluteSize"):Connect(callbackProxy)
+		self.content:GetPropertyChangedSignal("CanvasSize"):Connect(callbackProxy)
+	end
+
+	callbackProxy()
+end
+
+function List:getBounds(object, text, maxSize)
+	return TextService:GetTextSize(
+		text,
+		object.TextSize,
+		object.Font,
+		maxSize or Vector2.new(
+			self.content.CanvasSize.X.Offset,
+			9e6
+		)
+	)
+end
+
+function List:addItem(text, onHover)
+	print(text)
+	if not text then
+		return
+	end
+
+	local textLabel = self.window:add("TextLabel", self.content)
+	textLabel.Name = #self.content:GetChildren()
+	textLabel.Text = text
+	textLabel.TextSize = self.textSize or 16
+	textLabel.Size = UDim2.new(1, 0, 0, 25)
+	textLabel.Font = Enum.Font.Gotham
+	textLabel.TextXAlignment = Enum.TextXAlignment.Left
+	textLabel.TextYAlignment = Enum.TextYAlignment.Top
+	textLabel.BackgroundTransparency = 1
+	textLabel.TextTransparency = 1
+	self.handler.themeSyncer:bindElement(textLabel, "TextColor3", "text")
+
+	self:connectBoundsUpdate(textLabel, function()
+		local bounds = self:getBounds(textLabel, textLabel.Text)
+		textLabel.Size = UDim2.new(1, -self.content.ScrollBarThickness, 0, bounds.Y)
+		textLabel.TextScaled = not textLabel.TextScaled
+		textLabel.TextScaled = not textLabel.TextScaled
+	end)
+	
+	if onHover then
+		local hoverIndicator = self.window:add("StringValue", textLabel)
+		hoverIndicator.Name = "Hover"
+		hoverIndicator.Value = onHover
+	end
+	
+	TweenService:Create(textLabel, TweenInfo.new(0.5), {
+		TextTransparency = 0
+	}):Play()
+
+	return textLabel
+end
+
+function List:build()
+	local window = self.handler:addWindow(self.name, UDim2.new(0, 250, 0, 300))
+	local content = window:add("ScrollingFrame")
+	local contentLayout = window:add("UIListLayout", content)
+	
+	window.minimumSize = Vector2.new(125, 200)
+	window.maximumSize = Vector2.new(400, 500)
+	
+	content.Name = "Content"
+	content.Size = UDim2.new(1, -10, 1, -10)
+	content.AnchorPoint = Vector2.new(0.5, 0.5)
+	content.Position = UDim2.new(0.5, 0, 0.5, 0)
+	content.BackgroundTransparency = 1
+	content.BorderSizePixel = 0
+	content.ScrollBarThickness = 5
+	content.ScrollBarImageTransparency = 0.5
+
+	contentLayout.Name = "Layout"
+	contentLayout.Padding = UDim.new(0, 5)
+	contentLayout.VerticalAlignment = Enum.VerticalAlignment.Top	
+	contentLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+	local toAdd = {
+		window = window,
+		content = content,
+		contentLayout = contentLayout
+	}
+
+	for name, object in pairs(toAdd) do
+		self[name] = object
+	end
+end
+
+function List:init(initialData)
+	if not self.window then
+		self:build()
+	end
+	
+	spawn(function() -- i know spawn sucks ass for performance but fight me skrub :p
+		for _, item in ipairs(initialData) do
+			self:addItem(unpack(item))
+			wait(0.1)
+		end
+	end)
+end
+
+function List.new(handler, name, data)
+	local self = setmetatable({
+		handler = handler,
+		name = name
+	}, List)
+	
+	self:init(data or {})
+	
+	return self
+end
+
+
 local WindowHandler = {}
 WindowHandler.__index = WindowHandler
 
@@ -2402,6 +2664,7 @@ function WindowHandler.new(parent, theme)
 	
 	self.gui.Parent = parent or playerGui
 	self.gui.DisplayOrder = 9e9
+	self.gui.IgnoreGuiInset = true
 	self.gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 	if not self.dock then
@@ -2610,11 +2873,32 @@ local CommandSystem = {}
 CommandSystem.__index = CommandSystem
 
 function CommandSystem:error(message, isEnd)
-	self.terminal:addText(message)
-	if isEnd then
-		self.terminal:addPrompt()
+	if self.terminal then
+		self.terminal:addText(message)
+		if isEnd then
+			self.terminal:addPrompt()
+		end
+	else
+		self.notificationHandler:error(message)
 	end
-	--self.terminal:addPrompt(self.location)
+end
+
+function CommandSystem:notify(message)
+	if self.terminal then
+		self.terminal:addText(message)
+	else
+		self.notificationHandler:notify(message)
+	end
+end
+
+function CommandSystem:createList(name, listData)
+	if self.terminal then
+		for _, item in ipairs(listData) do
+			self.terminal:addText(table.concat(item, " - "))
+		end
+	else
+		List.new(self.windowHandler, name, listData)
+	end
 end
 
 function CommandSystem:getTargets(argument, command)
