@@ -1649,7 +1649,7 @@ function MouseHover:addElement(uiElement, hoverText)
 				else
 					mouseOffset = 60
 				end
-				mouseOffset -= 36
+				--mouseOffset -= 36
 				
 				if mouseX -self.container.AbsoluteSize.X >= 0 then
 					self.container.Position = UDim2.new(
@@ -1682,6 +1682,8 @@ function MouseHover:build()
 	
 	container.Name = "MouseLabel"
 	container.BackgroundTransparency = 1
+	container.Position = UDim2.new(1, 0, 1, 0)
+	container.Size = UDim2.new(0, 0, 0, 0)
 	container.ZIndex = 9e5
 	
 	frame.Name = "Content"
@@ -1713,6 +1715,7 @@ function MouseHover:build()
 	label.TextXAlignment = Enum.TextXAlignment.Left
 	label.TextYAlignment = Enum.TextYAlignment.Top
 	label.BackgroundTransparency = 1
+	label.Text = ""
 	self.handler.themeSyncer:bindElement(label, "TextColor3", "text")
 	
 	local toAdd = {
@@ -1845,21 +1848,26 @@ function Window:allocateSpace(size, maxCycles)
 	maxCycles = maxCycles or 50
 	
 	local position = (camera.ViewportSize - size) / 2
-	local incrementDelta = 5
+	local incrementDelta = Vector2.new(10, 10)
 	
 	local function isTaken(position)
-		for _, window in ipairs(self.handler.windows) do
-			if window.AbsolutePosition == position then
+		for _, window in pairs(self.handler.windows) do
+			if (window.container.AbsolutePosition - position).magnitude < 1 then
 				return true
 			end
 		end
 		return false
 	end
-	
+
 	local cycleIndex = 0
-	while cycleIndex >= maxCycles or isTaken(position) do
+	while cycleIndex <= maxCycles and isTaken(position) do
 		local updatedPosition = position + incrementDelta
 		local endPosition = updatedPosition + size
+		
+		--[[updatedPosition = Vector2.new(
+			updatedPosition.X % camera.ViewportSize.X,
+			updatedPosition.Y % camera.ViewportSize.Y
+		)]]
 		
 		if endPosition.X > camera.ViewportSize.X then
 			updatedPosition = Vector2.new(0, updatedPosition.Y)
@@ -2735,7 +2743,7 @@ function WindowHandler.new(parent, theme)
 	
 	self.gui.Parent = parent or playerGui
 	self.gui.DisplayOrder = 9e9
-	self.gui.IgnoreGuiInset = true
+	--self.gui.IgnoreGuiInset = true
 	self.gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	
 	if not self.mouseHover then
@@ -3169,7 +3177,14 @@ function CommandSystem.new(terminal)
 		location = localPlayer,
 		parser = Parser.new(),
 		inputBinder = InputBinder.new(),
-		sandbox = Sandbox.new(getfenv(0)), -- just gets the global environment, so chill dude
+		sandbox = Sandbox.new({
+			__index = function(_, index)
+				local fromEnvironment = getfenv()[index]
+				if fromEnvironment then
+					return fromEnvironment
+				end
+			end	
+		}), -- just gets the global environment, so chill dude
 		commands = Commands or {},
 		playerTypes = PlayerTypes,
 		argumentTypes = ArgumentTypes,
