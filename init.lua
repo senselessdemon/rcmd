@@ -6,7 +6,7 @@ end
 
 local AUTO_TEXT_RESIZE = true
 local DYNAMIC_TERMINAL = false -- don't enable this please
-local VERSION = "v0.2.5"
+local VERSION = "v0.2.6"
 
 local startTime = tick()
 
@@ -64,6 +64,60 @@ function getExecutor()
 		execseutor = "Sentinel"
 	end
 	return executor
+end
+
+function getTool()
+	return (backpack:FindFirstChildOfClass("Tool") or backpack:FindFirstChildOfClass("HopperBin")) or (localPlayer.Character and (localPlayer.Character:FindFirstChildOfClass("Tool") or localPlayer.Character:FindFirstChildOfClass("HopperBin")))
+end
+
+function attach(target)
+	if getTool() then
+		local character = localPlayer.Character
+		local targetCharacter = target.Character
+
+		if character and targetCharacter then
+			local humanoid = character:FindFirstChild("Humanoid")
+			local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+			local targetHumanoidRootPart = targetCharacter:FindFirstChild("HumanoidRootPart")
+			
+			if humanoid and humanoidRootPart and targetHumanoidRootPart then
+				humanoid.Name = "Old"
+				
+				local newHumanoid = humanoid:Clone()
+				newHumanoid.Parent = character
+				newHumanoid.Name = "Humanoid"
+				newHumanoid.DistanceDisplayType = Enum.HumanoidDisplayDistanceType.None
+				
+				RunService.Stepped:Wait()
+				humanoid:Destroy()
+				camera.CameraSubject = character
+				
+				local tool = getTool()
+				tool.Parent = character
+				character:SetPrimaryPartCFrame(targetHumanoidRootPart.CFrame * CFrame.new(
+					math.random(-100, 100) / 200,
+					math.random(-100, 100) / 200,
+					math.random(-100, 100) / 200
+				))
+				
+				local connection
+				local lastCycle = 0
+				local cycles = 0
+				connection = RunService.RenderStepped:Connect(function()
+					local deltaTime = tick() - lastCycle
+					
+					if deltaTime >= 0.1 then
+						cycles = cycles + 1
+						character:SetPrimaryPartCFrame(targetHumanoidRootPart.CFrame)
+					end
+					
+					if not tool or not tool.Parent then
+						connection:Disconnect()
+					end
+				end)
+			end
+		end
+	end
 end
 
 
@@ -476,7 +530,7 @@ local Commands = {
 			TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, localPlayer)
 		end,
 	},
-	
+
 	{
 		name = "close",
 		description = "Closes  (until executed again)",
@@ -1135,6 +1189,37 @@ local Commands = {
 			ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(arguments.message or "lol", "All") -- lol
 		end,
 	},
+	
+	{
+		name = "respawn",
+		description = "Respawns the local character",
+		aliases = {"res"},
+		process = function(self, arguments, commandSystem)
+			local character = localPlayer.Character
+			character:ClearAllChildren()
+			localPlayer.Character = Instance.new("Model", workspace)
+			
+			RunService.RenderStepped:Wait()
+			localPlayer.Character = character
+		end,
+	},
+	
+	{
+		name = "refresh",
+		description = "Refreshed the local character",
+		aliases = {"re"},
+		process = function(self, arguments, commandSystem)
+			local character = localPlayer.Character
+			if character then
+				local location = character:GetPrimaryPartCFrame()
+				commandSystem:executeCommand(commandSystem:findCommand("respawn"), {}, true)
+				
+				RunService.RenderStepped:Wait()
+				local humanoidRootPart = localPlayer:WaitForChild("HumanoidRootPart")
+				localPlayer:SetPrimaryPartCFrame(location)
+			end
+		end,
+	},
 
 	{
 		name = "teleport",
@@ -1381,6 +1466,99 @@ local Commands = {
 		reverseProcess = function(self, arguments, commandSystem)
 			commandSystem.cache:get("autoClick"):Disconnect()
 			commandSystem.cache:remove("autoClick")
+		end
+	},
+	
+	{
+		name = "reach",
+		description = "Extends the rainge of your weapon (sword)",
+		aliases = {"range"},
+		arguments = {
+			{
+				name = "studs",
+				type = "int"
+			},
+		},
+		process = function(self, arguments, commandSystem)
+			local character = localPlayer.Character
+			if character then
+				for _, child in ipairs(character:GetChildren()) do
+					if child:IsA("Tool") then
+						local handle = child:FindFirstChild("Handle")
+						if handle then
+							commandSystem.cache:set("lastReach", {
+								tool = child,
+								size = handle.Size,
+								gripPos = child.GripPos
+							})
+
+							local selectionBox = Instance.new("SelectionBox", child)
+							selectionBox.Name = "Reach"
+							selectionBox.Adornee = handle
+
+							handle.Size = Vector3.new(0.5, 0.5, arguments.studs == 0 and 10 or arguments.studs)
+							handle.Massless = true
+							child.GripPos = Vector3.new(0, 0, 0)
+						end
+					end
+				end
+			end
+		end,
+		reverseProcess = function(self, arguments, commandSystem)
+			local lastReach = commandSystem.cache:get("lastReach")
+
+			if lastReach and lastReach.tool then
+				local handle = lastReach.tool:FindFirstChild("Handle")
+				lastReach.tool.GripPos = lastReach.gripPos
+				if handle then
+					handle.Size = lastReach.size
+				end
+
+				commandSystem.cache:remove("lastReach")
+			end
+		end
+	},
+	
+	{
+		name = "kill",
+		requiresTool = true,
+		description = "Kills the given players",
+		aliases = {"exterminate", "commitDie"},
+		arguments = {
+			{
+				name = "players",
+				type = "player(s)"
+			},
+		},
+		process = function(self, arguments, commandSystem)
+			local character = localPlayer.Character
+			if character then
+				for _, target in ipairs(arguments.players) do
+					local targetCharacter = target.Character
+					if targetCharacter then
+						local targetHumanoidRootPart = targetCharacter:FindFirstChild("HumanoidRootPart")
+						if targetHumanoidRootPart then
+							local originalLocation = character:GetPrimaryPartCFrame()
+							attach(character)
+
+							local connection
+							local lastUpdate = 0
+							connection = RunService.RenderStepped:Connect(function()
+								local deltaTime = tick() - lastUpdate
+
+								if not targetCharacter:FindFirstChild("HumanoidRootPart") then
+									connection:Disconnect()
+									character:SetPrimaryPartCFrame(originalLocation)
+								end
+
+								if deltaTime > 0.1 then
+									character:SetPrimaryPartCFrame(CFrame.new(9e9, workspace.FallenPartsDestroyHeight + 5, 9e9))
+								end
+							end)
+						end
+					end
+				end
+			end
 		end
 	},
 	
@@ -2963,6 +3141,50 @@ function Sandbox.new(environment)
 end
 
 
+local Logger = {}
+Logger.__index = Logger
+
+function Logger:log(type, ...)
+	if self.options[type] then
+		self.logs[type][#self.logs[type]+1] = {tick(), ...}
+	end
+end
+
+function Logger:init()
+	self.connetions.join = Players.PlayerAdded:Connect(function(player)
+		self:log("join", player)
+		
+		player.Chatted:Connect(function(message)
+			self:log("chat", player, message)
+		end)
+	end)
+	
+	self.connetions.leave = Players.Playerremoving:Connect(function(player)
+		self:log("leave", player)
+	end)
+end
+
+function Logger.new(options)
+	local self = setmetatable({
+		logs = {
+			chat = {},
+			join = {},
+			leave = {}
+		},
+		connections = {},
+		options = options or {
+			chat = true,
+			join = true,
+			leave = true
+		}
+	}, Logger)
+	
+	self:init()
+	
+	return self
+end
+
+
 local Parser = {}
 Parser.__index = Parser
 
@@ -3220,7 +3442,7 @@ function CommandSystem:findCommand(call)
 end
 
 function CommandSystem:executeCommand(command, processType, arguments, isNested)
-	if command.requiresTool and not (backpack:FindFirstChildOfClass("Tool") or backpack:FindFirstChildOfClass("HopperBin")) then
+	if command.requiresTool and not getTool() then
 		return self:error("You must have a tool to use this command")
 	end
 	
@@ -3316,6 +3538,7 @@ function CommandSystem.new(terminal)
 			WindowHandler = WindowHandler,
 			Task = Task,
 			Sandbox = Sandbox,
+			Logger = Logger,
 			Parser = Parser,
 			CommandSystem = CommandSystem
 		}
