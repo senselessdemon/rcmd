@@ -1471,6 +1471,7 @@ local Commands = {
 	
 	{
 		name = "reach",
+		requiresTool = true,
 		description = "Extends the rainge of your weapon (sword)",
 		aliases = {"range"},
 		arguments = {
@@ -3443,7 +3444,7 @@ end
 
 function CommandSystem:executeCommand(command, processType, arguments, isNested)
 	if command.requiresTool and not getTool() then
-		return self:error("You must have a tool to use this command")
+		return self:error("You must have a tool to use this command", true)
 	end
 	
 	local task = Task.new(command[processType])
