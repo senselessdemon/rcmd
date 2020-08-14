@@ -277,14 +277,14 @@ local PlayerTypes = {
 	},
 
 	{
-		calls = {"all", "everyone", "@e"},
+		calls = {"all", "everyone", "@a", "@e", "@everyone"},
 		process = function(command, parameter)
 			return Players:GetPlayers()
 		end
 	},
 
 	{
-		calls = {"others", "everyoneElse", "@a"},
+		calls = {"others", "everyoneElse", "@s"},
 		process = function(command, parameter)
 			local targets = {}
 			for _, player in ipairs(Players:GetPlayers()) do
@@ -297,7 +297,7 @@ local PlayerTypes = {
 	},
 	
 	{
-		calls = {"random"},
+		calls = {"random", "rand", "@r"},
 		process = function(command, parameter)
 			local players = Players:GetPlayers()
 			local targets = {}
@@ -1930,38 +1930,44 @@ function MouseHover:determineBounds(text)
 	return bounds
 end
 
-function MouseHover:addElement(uiElement, hoverText)
+function MouseHover:addElement(uiElement, hoverText, validationCallback)
+	validationCallback = validationCallback or function(...)
+		return true
+	end
+
 	self.connections[uiElement] = {
 		mouseEnter = uiElement.MouseEnter:Connect(function()
 			uiElement.MouseMoved:Connect(function(mouseX, mouseY)
-				self.label.Text = hoverText or uiElement.Hover.Value
-				
-				self.label.TextScaled = not self.label.TextScaled -- again, fix roblox bug :\
-				self.label.TextScaled = not self.label.TextScaled
-				
-				local bounds = self:determineBounds(self.label.Text)
-				self.container.Size = UDim2.new(
-					0, bounds.X + self.padding*2,
-					0, bounds.Y + self.padding*2
-				)
-				
-				local mouseOffset
-				if self.container.AbsoluteSize.Y <= self.label.TextSize + self.padding*2 then
-					mouseOffset = self.container.AbsoluteSize.Y*2 - 5
-				else
-					mouseOffset = 60
-				end
-				
-				if mouseX -self.container.AbsoluteSize.X >= 0 then
-					self.container.Position = UDim2.new(
-						0, mouseX - self.container.AbsoluteSize.X,
-						0, mouseY - self.container.AbsoluteSize.Y/2 - mouseOffset
+				if validationCallback(mouseX, mouseY) then
+						self.label.Text = hoverText or uiElement.Hover.Value
+					
+					self.label.TextScaled = not self.label.TextScaled -- again, fix roblox bug :\
+					self.label.TextScaled = not self.label.TextScaled
+					
+					local bounds = self:determineBounds(self.label.Text)
+					self.container.Size = UDim2.new(
+						0, bounds.X + self.padding*2,
+						0, bounds.Y + self.padding*2
 					)
-				elseif mouseX - self.container.AbsoluteSize.X <= 0 then
-					self.container.Position = UDim2.new(
-						0, mouseX,
-						0, mouseY - self.container.AbsoluteSize.Y/2 - mouseOffset
-					)
+					
+					local mouseOffset
+					if self.container.AbsoluteSize.Y <= self.label.TextSize + self.padding*2 then
+						mouseOffset = self.container.AbsoluteSize.Y*2 - 5
+					else
+						mouseOffset = 60
+					end
+					
+					if mouseX -self.container.AbsoluteSize.X >= 0 then
+						self.container.Position = UDim2.new(
+							0, mouseX - self.container.AbsoluteSize.X,
+							0, mouseY - self.container.AbsoluteSize.Y/2 - mouseOffset
+						)
+					elseif mouseX - self.container.AbsoluteSize.X <= 0 then
+						self.container.Position = UDim2.new(
+							0, mouseX,
+							0, mouseY - self.container.AbsoluteSize.Y/2 - mouseOffset
+						)
+					end
 				end
 			end)
 		end),
@@ -2570,6 +2576,43 @@ function Window:toAbsolute(size)
 	return size
 end
 
+function Window:isOnTop(x, y)
+	for _, window in ipairs(self.handler.windows) do
+		local position = window.container.AbsolutePosition
+		local size = window.container.AbsoluteSize
+		
+		local xInbound = x > position.X and x - position.X < size.X
+		local yInbound = y > position.Y and y - position.Y < size.Y
+		
+		if xInbound and yInbound and window.container ~= self.container then
+			if window.container.ZIndex > self.container.ZIndex then
+				return false
+			end
+		end
+	end
+	
+	return true
+end
+
+function Window:runOverlapping()
+	local acceptedInputs = {Enum.UserInputType.MouseButton1, Enum.UserInputType.Touch}
+	self.container.InputBegan:Connect(function(input)
+		if table.find(acceptedInputs, input.UserInputType) then
+			if self:isOnTop(input.Position.X, input.Position.Y) then
+				local highestZIndex = self.container.ZIndex
+
+				for _, window in ipairs(self.handler.windows) do
+					if window.container ~= self.container then
+						highestZIndex = math.max(highestZIndex, window.container.ZIndex)
+					end
+				end
+
+				self.container.ZIndex = highestZIndex + 1
+			end
+		end
+	end)
+end
+
 function Window:allocateSpace(size, maxCycles)
 	size = self:toAbsolute(size or self.container.Size)
 	maxCycles = maxCycles or 50
@@ -2924,6 +2967,7 @@ function Window:init(size)
 	if not self.window then
 		self:build(size)
 		self:allocateSpace()
+		self:runOverlapping()
 
 		self.buttons.close.MouseButton1Click:Connect(function()
 			self:close()
