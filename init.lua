@@ -1,11 +1,13 @@
 -- SenslessDemon
 
+local runningArguments = {...}
+
 if _G.rCMD and _G.rCMD.running then
 	return error("rCMD is already running!")
 end
 
 local AUTO_TEXT_RESIZE = true
-local DYNAMIC_TERMINAL = false -- don't enable this please
+local DYNAMIC_TERMINAL = runningArguments[1] -- don't enable this please
 local VERSION = "v0.2.6"
 
 local startTime = tick()
@@ -254,8 +256,10 @@ local Themes = {
 		suggestion = Color3.fromRGB(178, 178, 178),
 		transparency = 0,
 		shadow = true,
-	}
+	},
 }
+
+Themes.custom = runningArguments[2] or Themes.aero
 
 
 local PlayerTypes = {
@@ -418,7 +422,7 @@ local ArgumentTypes = {
 					return theme
 				end
 			end
-			commandSystem.terminal:addText(("\"%s\" is not a valid theme"):format(argument.raw))
+			commandSystem:notify(("\"%s\" is not a valid theme"):format(argument.raw))
 			return commandSystem.themeSyncer.currentTheme
 		end
 	},
@@ -428,7 +432,7 @@ local ArgumentTypes = {
 		process = function(argument, commandSystem)
 			local command = commandSystem:findCommand(argument.raw or "")
 			if not command then
-				commandSystem.terminal:addText(("\"%s\" is not a valid command"):format(argument.raw))
+				commandSystem:notify(("\"%s\" is not a valid command"):format(argument.raw))
 				return commandSystem.commands[1]
 			else
 				return command
@@ -441,6 +445,7 @@ local ArgumentTypes = {
 local Commands = {
 	{
 		name = "echo",
+		terminalCommand = true,
 		description = "Outputs the given message",
 		arguments = {
 			{
@@ -476,6 +481,7 @@ local Commands = {
 	{
 		name = "terminal",
 		description = "Opens a new terminal",
+		terminalCommand = true,
 		arguments = {},
 		process = function(self, arguments, commandSystem)
 			commandSystem.terminal = commandSystem.classes.Terminal.new(commandSystem.windowHandler)
@@ -572,13 +578,11 @@ local Commands = {
 					"rCMD's Repository: https://github.com/senslessdemon/rcmd",
 					"Our Discord server: https://discord.io/demonden"
 				}
-				for _, message in ipairs(help) do
-					commandSystem.terminal:addText(message)
-				end
+				commandSystem:createList("Help", help)
 			else
 				local command = arguments.command
 				if command.hidden and not arguments.core.force then
-					return commandSystem.terminal:addText("I do not understand what command you are talking about bro")
+					return commandSystem:error("I do not understand what command you are talking about bro")
 				end
 				
 				local arguments = {}
@@ -602,10 +606,7 @@ local Commands = {
 					"Replicates: { " .. (command.noReplication and "no" or "yes"),
 					"Reversable: " .. (command.reverseProcess and "yes" or "no")
 				}
-
-				for _, line in ipairs(data) do
-					commandSystem.terminal:addText(line)
-				end
+				commandSystem:createList("Command Info", data)
 			end
 		end,
 	},
@@ -846,13 +847,13 @@ local Commands = {
 
 				if didExecute then
 					if executeResult and executeResult ~= "" then
-						commandSystem.terminal:addText(tostring(executeResult))
+						commandSystem:notify(tostring(executeResult))
 					end
 				else
-					commandSystem.terminal:addText(executeResult)
+					commandSystem:error(executeResult)
 				end
 			else
-				commandSystem.terminal:addText(parseResult)
+				commandSystem:error(parseResult)
 			end
 		end,
 	},
@@ -875,16 +876,16 @@ local Commands = {
 					local didExecute, executeResult = pcall(parseResult)
 					if didExecute then
 						if executeResult and executeResult ~= "" then
-							commandSystem.terminal:addText(tostring(executeResult))
+							commandSystem:notify(tostring(executeResult))
 						end
 					else
-						commandSystem.terminal:addText(executeResult)
+						commandSystem:error(executeResult)
 					end
 				else
-					commandSystem.terminal:addText(parseResult)
+					commandSystem:error(parseResult)
 				end
 			else
-				commandSystem.terminal:addText(("Unable to make a GET request to \"%s\""):format(arguments.url))
+				commandSystem:error(("Unable to make a GET request to \"%s\""):format(arguments.url))
 			end
 		end,
 	},
@@ -1066,7 +1067,7 @@ local Commands = {
 					end
 				end
 			else
-				commandSystem.terminal:addText("Your exploit does not support the firing of click-detectors")
+				commandSystem:error("Your exploit does not support the firing of click-detectors")
 			end
 		end
 	},
@@ -1460,7 +1461,7 @@ local Commands = {
 					end
 				end))
 			else
-				commandSystem.terminal:addText("Your exploit does not have the ability to force mouse input")
+				commandSystem:error("Your exploit does not have the ability to force mouse input")
 			end
 		end,
 		reverseProcess = function(self, arguments, commandSystem)
@@ -2046,6 +2047,377 @@ function MouseHover.new(handler)
 end
 
 
+local CommandBar = {}
+CommandBar.__index = CommandBar
+
+function CommandBar:determineBounds(text)
+	local bounds = TextService:GetTextSize(
+		text,
+		self.label.TextSize,
+		self.label.Font,
+		Vector2.new(
+			math.max(camera.ViewportSize.X / 4, 200),
+			camera.ViewportSize.Y
+		)
+	)
+	return bounds
+end
+
+function CommandBar:build()
+	local container = Instance.new("Frame", self.handler.gui)
+	local shadow = Instance.new("ImageLabel", container)
+	local frame = Instance.new("Frame", container)
+	local corner = Instance.new("UICorner", frame)
+	local box = Instance.new("TextBox", frame)
+	
+	container.Name = "CommandBar"
+	container.BackgroundTransparency = 1
+	container.Position = UDim2.new(1, 0, 1, 0)
+	container.Size = UDim2.new(0, 0, 0, 0)
+	container.ZIndex = 9e5
+	
+	frame.Name = "Content"
+	frame.Size = UDim2.new(1, 0, 1, 0)
+	frame.BorderSizePixel = 0
+	self.handler.themeSyncer:bindElement(frame, "BackgroundColor3", "headerBackground")
+	self.handler.themeSyncer:bindElement(frame, "BackgroundTransparency", "transparency")
+	
+	shadow.Name = "Shadow"
+	shadow.Image = "rbxassetid://1113384364"
+	shadow.ScaleType = Enum.ScaleType.Slice
+	shadow.SliceCenter = Rect.new(50, 50, 50, 50)
+	shadow.Size = UDim2.new(1, 80, 1, 80)
+	shadow.Position = UDim2.new(0.5, 0, 0.5, 0)
+	shadow.AnchorPoint = Vector2.new(0.5, 0.5)
+	shadow.BackgroundTransparency = 1
+	shadow.ImageTransparency = 0.75
+	self.handler.themeSyncer:bindElement(shadow, "Visible", "shadow")
+	
+	corner.Name = "Corner"
+	self.handler.themeSyncer:bindElement(corner, "CornerRadius", "roundness")
+	
+	box.Name = "Box"
+	box.Size = UDim2.new(1, -self.padding*2, 1, -self.padding*2)
+	box.Position = UDim2.new(0.5, 0, 0.5, 0)
+	box.AnchorPoint = Vector2.new(0.5, 0.5)
+	box.Font = Enum.Font.Gotham
+	box.TextSize = 16
+	box.TextXAlignment = Enum.TextXAlignment.Left
+	box.TextYAlignment = Enum.TextYAlignment.Top
+	box.BackgroundTransparency = 1
+	box.Text = ""
+	box.PlaceholderText = "Enter command here..."
+	self.handler.themeSyncer:bindElement(box, "TextColor3", "textBox")
+	box:GetPropertyChangedSignal("Text"):Connect(function()
+		local bounds = self:determineBounds(box.Text)
+		container.Size = UDim2.new(
+			0, bounds + self.padding*2,
+			0, bounds + self.padding*2
+		)
+		box.TextScaled = not box.TextScaled
+		box.TextScaled = not box.TextScaled
+	end)
+	
+	local function callbackProxy()
+		local success, response = pcall(self.defaultCallback, self.box.Text)
+	end
+	
+	local inputConnections = {}
+	local inputs = {Enum.KeyCode.Return, Enum.KeyCode.ButtonA}
+	inputConnections.focused = self.box.Focused:Connect(function()
+		focused = true
+	end)
+	inputConnections.focusLost = self.boxbox.FocusLost:Connect(function()
+		wait()
+		focused = false
+	end)
+	inputConnections.keyCode = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+		if table.find(inputs, input.KeyCode) and focused then
+			callbackProxy()
+		end
+	end)
+	inputConnections.onScreenKeyboard = box.ReturnPressedFromOnScreenKeyboard:Connect(function()
+		callbackProxy()
+	end)
+	
+	local toAdd = {
+		container = container,
+		shadow = shadow,
+		frame = frame,
+		box = box,
+		corner = corner,
+	}
+	
+	for name, object in pairs(toAdd) do
+		self[name] = object
+	end
+	
+	return container
+end
+
+function CommandBar:init()
+	if not self.container then
+		self:build()
+	end
+end
+
+function CommandBar.new(handler, defaultCallback)
+	local self = setmetatable({
+		handler = handler,
+		padding = 7.5,
+		defaultCalaback = defaultCallback or function(...)
+		end
+	}, CommandBar)
+	
+	return self
+end
+
+
+local Notification = {}
+Notification.__index = Notification
+
+function Notification:display()
+	self.container.Position = UDim2.new(
+		1, self.container.AbsoluteSize.X*2 + 15,
+		1, -15
+	)
+	
+	local absoluteSize = self:determineSize(self.body.Text)
+	self.container.Size = UDim2.new(0, absoluteSize.X, 0, absoluteSize.Y)
+	self.body.TextScaled = not self.body.TextScaled
+	self.body.TextScaled = not self.body.TextScaled
+	
+	for _, existingNotification in pairs(self.handler.notifications) do
+		if existingNotification.container ~= self.container then
+			existingNotification.container:TweenPosition(UDim2.new(
+				1, -15,
+				0, existingNotification.container.AbsolutePosition.Y + existingNotification.container.AbsoluteSize.Y - existingNotification.container.AbsoluteSize.Y - 15
+			), "In", "Quint", 0.25)
+		end
+	end
+	
+	self.container:TweenPosition(UDim2.new(1, -15, 1, -15), "Out", "Quint", 0.25)
+	
+	local closing = false
+	local function close(clicked)
+		self.container:TweenPosition(UDim2.new(
+			1, self.container.AbsoluteSize.X * 2 + 15,
+			0, self.container.AbsolutePosition.Y + self.container.AbsoluteSize.Y
+		), "In", "Quint", 0.25, true, function(status)
+			if status == Enum.TweenStatus.Completed then
+				self.container:Destroy()
+			end
+		end)
+
+		for _, existingNotification in pairs(self.handler.notifications) do
+			if existingNotification.container ~= self.container and existingNotification.container.AbsolutePosition.Y < self.container.container.AbsolutePosition.Y then
+				existingNotification.container:TweenPosition(UDim2.new(
+					1, -15,
+					0, existingNotification.container.AbsolutePosition.Y + existingNotification.container.AbsoluteSize.Y + self.container.AbsoluteSize.Y + 15
+				), "In", "Quint", 0.25)
+			end
+		end
+
+		wait(0.1)
+		if clicked and not closing then
+			self._clicked:Fire()
+		else
+			self._closed:Fire()
+		end
+	end
+	
+	self.controls.close.MouseButton1Click:Connect(function()
+		closing = true
+		close(false)
+	end)
+	
+	self.container.MouseButton1Click:Connect(function()
+		closing = false
+		close(true)
+	end)
+	
+	delay(self.duration or 10, function()
+		if self.container and self.container.Parent then
+			closing = true
+			close(false)
+		end
+	end)
+end
+
+function Notification:determineSize(text)
+	local bodyBounds = TextService:GetTextSize(
+		text,
+		self.body.TextSize,
+		self.body.Font,
+		Vector2.new(
+			self.body.AbsoluteSize.X,
+			200
+		)
+	)
+	
+	return Vector2.new(
+		self.body.AbsoluteSize.X,
+		bodyBounds.Y - self.body.Size.Y.Offset + self.header.AbsoluteSize.Y
+	)
+end
+
+function Notification:build()
+	local container = Instance.new("TextLabel", self.handler.gui)
+	local notification = Instance.new("Frame", container)
+	local uiCorner = Instance.new("UICorner", notification)
+	local shadow = Instance.new("ImageLabel", notification)
+	local body = Instance.new("Frame", notification)
+	local header = Instance.new("Frame", notification)
+	local headerCorner = Instance.new("UICorner", header)
+	local title = Instance.new("TextLabel", header)
+	local bodyText = Instance.new("TextLabel", body)
+	local controls = Instance.new("Frame", header)
+	local controlsLayout = Instance.new("UIListLayout", controls)
+
+	container.Name = self.name or "Notitication"
+	container.BackgroundTransparency = 1
+	container.AnchorPoint = Vector2.new(1, 1)
+	container.Size = UDim2.new(0, 200, 0, 50)
+	container.Position = UDim2.new(2, 0, 2, 0)
+	container.Text = ""
+
+	notification.Name = "Content"
+	notification.ZIndex = 2
+	notification.Size = UDim2.new(1, 0, 1, 0)
+	notification.BackgroundTransparency = 0.025
+	self.handler.themeSyncer:bindElement(notification, "BackgroundColor3", "background")
+	self.handler.themeSyncer:bindElement(notification, "BackgroundTransparency", "transparency")
+
+	uiCorner.Name = "Corner"
+	self.handler.themeSyncer:bindElement(uiCorner, "CornerRadius", "roundness")
+
+	shadow.Name = "Shadow"
+	shadow.Image = "rbxassetid://1113384364"
+	shadow.ScaleType = Enum.ScaleType.Slice
+	shadow.SliceCenter = Rect.new(50, 50, 50, 50)
+	shadow.Size = UDim2.new(1, 80, 1, 80)
+	shadow.Position = UDim2.new(0.5, 0, 0.5, 0)
+	shadow.AnchorPoint = Vector2.new(0.5, 0.5)
+	shadow.BackgroundTransparency = 1
+	shadow.ImageTransparency = 0.75
+	self.handler.themeSyncer:bindElement(shadow, "Visible", "shadow")
+
+	body.Name = "Body"
+	body.Size = UDim2.new(1, 0, 1, -25)
+	body.Position = UDim2.new(0, 0, 0, 25)
+	body.BackgroundTransparency = 1
+	body.ClipsDescendants = true
+
+	header.Name = "Header"
+	header.Size = UDim2.new(1, 0, 0, 25)
+	header.BorderSizePixel = 0
+	self.handler.themeSyncer:bindElement(header, "BackgroundColor3", "headerBackground")
+	self.handler.themeSyncer:bindElement(header, "BackgroundTransparency", "transparency")
+
+	headerCorner.Name = "Corner"
+	self.handler.themeSyncer:bindElement(headerCorner, "CornerRadius", "roundness")
+
+	title.Name = "Title"
+	title.Size = UDim2.new(1, -10, 1, -10)
+	title.AnchorPoint = Vector2.new(0.5, 0.5)
+	title.Position = UDim2.new(0.5, 0, 0.5, 0)
+	title.BackgroundTransparency = 1
+	title.TextScaled = true
+	title.Font = Enum.Font.Gotham
+	title.TextXAlignment = Enum.TextXAlignment.Center
+	title.Text = self.title or "Notification"
+	self.handler.themeSyncer:bindElement(title, "TextColor3", "text")
+	
+	bodyText.Name = "Content"
+	bodyText.Size = UDim2.new(1, -10, 1, -10)
+	bodyText.AnchorPoint = Vector2.new(0.5, 0.5)
+	bodyText.Position = UDim2.new(0.5, 0, 0.5, 0)
+	bodyText.BackgroundTransparency = 1
+	bodyText.TextSize = 15
+	bodyText.Font = Enum.Font.Gotham
+	bodyText.TextXAlignment = Enum.TextXAlignment.Left
+	bodyText.TextYAlignment = Enum.TextYAlignment.Top
+	bodyText.Text = self.text or "Hello there!"
+	self.handler.themeSyncer:bindElement(bodyText, "TextColor3", "text")
+
+	controls.Name = "Controls"
+	controls.Size = UDim2.new(1, -10, 1, -2)
+	controls.Position = UDim2.new(0.5, 0, 0.5, 0)
+	controls.AnchorPoint = Vector2.new(0.5, 0.5)
+	controls.BackgroundTransparency = 1
+
+	controlsLayout.Name = "ListLayout"
+	controlsLayout.Padding = UDim.new(0, 5)
+	controlsLayout.FillDirection = Enum.FillDirection.Horizontal
+	controlsLayout.SortOrder = Enum.SortOrder.Name
+	controlsLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+
+	local closeButton = Instance.new("TextButton", controls)
+	local closeCorner = Instance.new("UICorner", closeButton)
+	
+	closeButton.Name = "1"
+	closeButton.Size = UDim2.new(0, 15, 0, 15)
+	closeButton.BackgroundColor3 = Color3.fromRGB(252, 87, 83)
+	closeButton.Text = ""
+
+	self.handler.themeSyncer:bindElement(closeCorner, "CornerRadius", "controlRoundness")
+	
+	controlsLayout:GetPropertyChangedSignal("HorizontalAlignment"):Connect(function()
+		local isRight = controlsLayout.HorizontalAlignment == Enum.HorizontalAlignment.Right
+		closeButton.Name = isRight and "3" or "1"
+	end)
+	self.handler.themeSyncer:bindElement(controlsLayout, "HorizontalAlignment", "controlAlignment")
+
+	local toAdd = {
+		container = container,
+		notification = notification,
+		corner = uiCorner,
+		bodyHolder = body,
+		header = header,
+		headerCorner = headerCorner,
+		title = title,
+		body = bodyText,
+		controls = controls,
+		controlsLayout = controlsLayout,
+		maximumSize = Vector2.new(800, 500),
+		minimumSize = Vector2.new(300, 175),
+		buttons = {
+			close = closeButton,
+		},
+	}
+
+	for name, object in pairs(toAdd) do
+		self[name] = object
+	end
+
+	return notification
+end
+
+function Notification:init()
+	if not self.notification then
+		self:build()
+	end
+end
+
+function Notification.new(handler, title, text, duration)
+	local self = setmetatable({
+		handler = handler,
+		title = title or "Notification",
+		text = text or "Hello world!",
+		duration = duration or 10,
+		_clicked = Instance.new("BindableEvent"),
+		_closed = Instance.new("BindableEvent")
+	}, Notification)
+	
+	self.clicked = self._clicked.Event
+	self.closed = self._closed.Event
+	
+	self:init()
+	
+	return self
+end
+
+
 local Window = {}
 Window.__index = Window
 
@@ -2142,7 +2514,7 @@ function Window:allocateSpace(size, maxCycles)
 	maxCycles = maxCycles or 50
 	
 	local position = (camera.ViewportSize - size) / 2
-	local incrementDelta = Vector2.new(10, 10)
+	local incrementDelta = Vector2.new(17.5, 17.5)
 	
 	local function isTaken(position)
 		for _, window in pairs(self.handler.windows) do
@@ -2999,13 +3371,50 @@ function List:init(initialData)
 	end)
 end
 
+function List:formatData(rawData)
+	local data = {}
+	if typeof(rawData) == "string" then
+		rawData = rawData:split("\n")
+	end
+	for _, element in ipairs(rawData) do
+		if typeof(element) == "string" then
+			element = {element}
+		end
+		data[#data+1] = element
+	end
+	return data
+end
+
 function List.new(handler, name, data)
 	local self = setmetatable({
 		handler = handler,
 		name = name
 	}, List)
 	
-	self:init(data or {})
+	self:init(self:formatData(data or {}))
+	
+	return self
+end
+
+
+local NotificationHandler = {}
+NotificationHandler.__index = NotificationHandler
+
+function NotificationHandler:addNotification(...)
+	local notification = Notification.new(self, ...)
+	self.notifications[#self.notifications+1] = notification
+	return notification
+end
+
+function NotificationHandler.new(windowHandler)
+	local self = setmetatable({
+		windowHandler = windowHandler,
+		gui = Instance.new("Folder", windowHandler.gui),
+		themeSyncer = windowHandler.themeSyncer,
+		notifications = {}
+	}, NotificationHandler)
+	
+	self.gui.Name = "Notifications"
 	
 	return self
 end
@@ -3306,7 +3715,8 @@ function CommandSystem:notify(message)
 	if self.terminal then
 		self.terminal:addText(message)
 	else
-		self.notificationHandler:notify(message)
+		local notification = self.notificationHandler:addNotification("rCMD", message, 10)
+		notification:display()
 	end
 end
 
@@ -3457,7 +3867,7 @@ function CommandSystem:executeCommand(command, processType, arguments, isNested)
 	local taskId = self.sandbox:addTask(task)
 	local response = {task:run(command, arguments, self)}
 	
-	if not isNested then
+	if not isNested and self.terminal then
 		self.terminal:addPrompt(self.location)
 	end
 	
@@ -3499,7 +3909,7 @@ function CommandSystem:executeTree(tree)
 					)
 				end)
 				
-				if found then
+				if found and self.terminal then
 					self.terminal:addText(tostring(result))
 				end
 			end
@@ -3516,7 +3926,7 @@ function CommandSystem:handleCall(message)
 	self:executeTree(tree)
 end
 
-function CommandSystem.new(terminal)
+function CommandSystem.new()
 	local self = setmetatable({
 		cache = Cache.new(),
 		location = localPlayer,
@@ -3549,13 +3959,22 @@ function CommandSystem.new(terminal)
 		if self.parser:trim(message) ~= "" then
 			self:handleCall(message)
 		else
-			self.terminal:addPrompt()
+			if self.terminal then
+				self.terminal:addPrompt()
+			else
+				self.commandBar.box.Text = ""
+			end
 		end
 	end
 
-	self.windowHandler = terminal and terminal.handler or WindowHandler.new()
-	self.terminal = terminal or Terminal.new(self.windowHandler, callback)
-	self.terminal.defaultCallback = callback
+	self.windowHandler = WindowHandler.new()
+	self.notificationHandler = NotificationHandler.new(self.windowHandler, callback)
+	if DYNAMIC_TERMINAL then
+		self.commandBar = CommandBar.new(self.windowHandler)
+	else
+		self.terminal = Terminal.new(self.windowHandler, callback)
+		self.terminal.defaultCallback = callback
+	end
 
 	return self
 end
