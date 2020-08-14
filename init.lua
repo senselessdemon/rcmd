@@ -7,7 +7,9 @@ if _G.rCMD and _G.rCMD.running then
 end
 
 local AUTO_TEXT_RESIZE = true
-local DYNAMIC_TERMINAL = runningArguments[1] -- don't enable this please
+local DYNAMIC_TERMINAL = false -- currently in BETA, but mostly functional
+local OPEN_HOTKEY = Enum.KeyCode.BackSlash
+
 local VERSION = "v0.2.6"
 
 local startTime = tick()
@@ -37,6 +39,10 @@ local camera = Workspace.CurrentCamera
 local mouse = localPlayer:GetMouse()
 
 --local loadstring = require(script.Loadstring)
+
+DYNAMIC_TERMINAL = runningArguments[1] or DYNAMIC_TERMINAL
+OPEN_HOTKEY = runningArguments[2] or OPEN_HOTKEY
+
 
 function getIdentity()
 	local currentIdentity = 1
@@ -2053,14 +2059,62 @@ CommandBar.__index = CommandBar
 function CommandBar:determineBounds(text)
 	local bounds = TextService:GetTextSize(
 		text,
-		self.label.TextSize,
-		self.label.Font,
+		self.box.TextSize,
+		self.box.Font,
 		Vector2.new(
-			math.max(camera.ViewportSize.X / 4, 200),
+			self.container.AbsoluteSize.X,
 			camera.ViewportSize.Y
 		)
 	)
 	return bounds
+end
+
+function CommandBar:open()
+	self.opened = true
+	local alignmentData = self.alignmentData[self.alignment]
+	TweenService:Create(self.container, TweenInfo.new(0.25, Enum.EasingStyle.Quint), {
+		AnchorPoint = alignmentData.anchorPoint,
+		Position = alignmentData.position
+	}):Play()
+	wait(0.25)
+	self.box:CaptureFocus()
+	self.box.Text = ""
+end
+
+function CommandBar:close()
+	self.opened = false
+	self.box:ReleaseFocus()
+	TweenService:Create(self.container, TweenInfo.new(0.25, Enum.EasingStyle.Quint), {
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 1, 0)
+	}):Play()
+	self.box.Text = ""
+end
+
+function CommandBar:toggle()
+	if self.opened then
+		self:close()
+	else
+		self:open()
+	end
+end
+
+function CommandBar:bind()
+	self.connection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+		if input.KeyCode == self.hotkey and not UserInputService:GetFocusedTextBox() then
+			self:toggle()
+		elseif (input.KeyCode == Enum.KeyCode.Return or input.KeyCode == Enum.KeyCode.Escape) and self.box.Text ~= "" then
+			if input.KeyCode == Enum.KeyCode.Return then
+				local command = self.box.Text
+				spawn(function()
+					self.defaultCallback(command)
+				end)
+			end
+			self:close()
+		elseif input.KeyCode == Enum.KeyCode.Escape then
+			self:close()
+		end
+	end)
 end
 
 function CommandBar:build()
@@ -2072,9 +2126,10 @@ function CommandBar:build()
 	
 	container.Name = "CommandBar"
 	container.BackgroundTransparency = 1
-	container.Position = UDim2.new(1, 0, 1, 0)
-	container.Size = UDim2.new(0, 0, 0, 0)
-	container.ZIndex = 9e5
+	container.AnchorPoint = Vector2.new(0.5, 0)
+	container.Position = UDim2.new(0.5, 0, 1, 0)
+	container.Size = UDim2.new(1, 0, 0, 30)
+	container.ZIndex = 9e6
 	
 	frame.Name = "Content"
 	frame.Size = UDim2.new(1, 0, 1, 0)
@@ -2111,8 +2166,8 @@ function CommandBar:build()
 	box:GetPropertyChangedSignal("Text"):Connect(function()
 		local bounds = self:determineBounds(box.Text)
 		container.Size = UDim2.new(
-			0, bounds + self.padding*2,
-			0, bounds + self.padding*2
+			(self.fullScreen and 1 or 0), (self.fullScreen and 0 or (bounds.X + self.padding*2)),
+			0, bounds.Y + self.padding*2
 		)
 		box.TextScaled = not box.TextScaled
 		box.TextScaled = not box.TextScaled
@@ -2121,24 +2176,6 @@ function CommandBar:build()
 	local function callbackProxy()
 		local success, response = pcall(self.defaultCallback, self.box.Text)
 	end
-	
-	local inputConnections = {}
-	local inputs = {Enum.KeyCode.Return, Enum.KeyCode.ButtonA}
-	inputConnections.focused = self.box.Focused:Connect(function()
-		focused = true
-	end)
-	inputConnections.focusLost = self.boxbox.FocusLost:Connect(function()
-		wait()
-		focused = false
-	end)
-	inputConnections.keyCode = UserInputService.InputBegan:Connect(function(input, gameProcessed)
-		if table.find(inputs, input.KeyCode) and focused then
-			callbackProxy()
-		end
-	end)
-	inputConnections.onScreenKeyboard = box.ReturnPressedFromOnScreenKeyboard:Connect(function()
-		callbackProxy()
-	end)
 	
 	local toAdd = {
 		container = container,
@@ -2159,15 +2196,38 @@ function CommandBar:init()
 	if not self.container then
 		self:build()
 	end
+	self:bind()
 end
 
-function CommandBar.new(handler, defaultCallback)
+function CommandBar.new(handler, hotkey, defaultCallback)
 	local self = setmetatable({
+		fullScreen = true,
 		handler = handler,
 		padding = 7.5,
+		hotkey = hotkey,
+		alignment = Enum.VerticalAlignment.Bottom,
+		alignmentData = {
+			[Enum.VerticalAlignment.Top] = {
+				anchorPoint = Vector2.new(0.5, 0),
+				position = UDim2.new(0.5, 0, 0, 0),
+				chatEnabled = false
+			},
+			[Enum.VerticalAlignment.Center] = {
+				anchorPoint = Vector2.new(0.5, 0.5),
+				position = UDim2.new(0.5, 0, 0.5, 0),
+				chatEnabled = true
+			},
+			[Enum.VerticalAlignment.Bottom] = {
+				anchorPoint = Vector2.new(0.5, 1),
+				position = UDim2.new(0.5, 0, 1, 0),
+				chatEnabled = true
+			},
+		},
 		defaultCalaback = defaultCallback or function(...)
 		end
 	}, CommandBar)
+	
+	self:init()
 	
 	return self
 end
@@ -2262,7 +2322,7 @@ function Notification:determineSize(text)
 end
 
 function Notification:build()
-	local container = Instance.new("TextLabel", self.handler.gui)
+	local container = Instance.new("TextBox", self.handler.gui)
 	local notification = Instance.new("Frame", container)
 	local uiCorner = Instance.new("UICorner", notification)
 	local shadow = Instance.new("ImageLabel", notification)
@@ -2280,6 +2340,7 @@ function Notification:build()
 	container.Size = UDim2.new(0, 200, 0, 50)
 	container.Position = UDim2.new(2, 0, 2, 0)
 	container.Text = ""
+	container.TextEditable = false
 
 	notification.Name = "Content"
 	notification.ZIndex = 2
@@ -3005,16 +3066,33 @@ function Dock:build()
 	return dock
 end
 
+function Dock:sync()
+	if self.dynamic then
+		UserInputService.InputChanged:Connect(function(input, gameProcessed)
+			if input.UserInputType == Enum.UserInputType.MouseMovement then
+				TweenService:Create(self.dock, TweenInfo.new(0.25, Enum.EasingStyle.Quad), {
+					AnchorPoint = Vector2.new(
+						0,
+						(input.Position.Y >= camera.ViewportSize.Y - self.dock.AbsoluteSize.Y/2 and 0.5 or 0)
+					)
+				}):Play()
+			end
+		end)
+	end
+end
+
 function Dock:init()
 	if not self.dock then
 		self:build()
 	end
+	self:sync()
 end
 
 function Dock.new(handler)
 	local self = setmetatable({
 		handler = handler,
 		size = 27.5,
+		dynamic = DYNAMIC_TERMINAL,
 		elements = {}
 	}, Dock)
 
@@ -3409,12 +3487,14 @@ end
 function NotificationHandler.new(windowHandler)
 	local self = setmetatable({
 		windowHandler = windowHandler,
-		gui = Instance.new("Folder", windowHandler.gui),
+		gui = Instance.new("Frame", windowHandler.gui),
 		themeSyncer = windowHandler.themeSyncer,
 		notifications = {}
 	}, NotificationHandler)
 	
 	self.gui.Name = "Notifications"
+	self.gui.Size = UDim2.new(1, 0, 1, 0)
+	self.gui.BackgroundTransparency = 1
 	
 	return self
 end
@@ -3707,7 +3787,7 @@ function CommandSystem:error(message, isEnd)
 			self.terminal:addPrompt()
 		end
 	else
-		self.notificationHandler:error(message)
+		self:notify(message)
 	end
 end
 
@@ -3715,7 +3795,7 @@ function CommandSystem:notify(message)
 	if self.terminal then
 		self.terminal:addText(message)
 	else
-		local notification = self.notificationHandler:addNotification("rCMD", message, 10)
+		local notification = self.notificationHandler:addNotification("Notification", message, 10)
 		notification:display()
 	end
 end
@@ -3942,6 +4022,8 @@ function CommandSystem.new()
 			Cache = Cache,
 			ESP = ESP,
 			MouseHover = MouseHover,
+			CommandBar = CommandBar,
+			Notification = Notification,
 			Window = Window,
 			Dock = Dock,
 			Terminal = Terminal,
@@ -3970,7 +4052,8 @@ function CommandSystem.new()
 	self.windowHandler = WindowHandler.new()
 	self.notificationHandler = NotificationHandler.new(self.windowHandler, callback)
 	if DYNAMIC_TERMINAL then
-		self.commandBar = CommandBar.new(self.windowHandler)
+		self.commandBar = CommandBar.new(self.windowHandler, OPEN_HOTKEY, callback)
+		self.commandBar.defaultCallback = callback
 	else
 		self.terminal = Terminal.new(self.windowHandler, callback)
 		self.terminal.defaultCallback = callback
