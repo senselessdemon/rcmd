@@ -265,7 +265,7 @@ local Themes = {
 	},
 }
 
-Themes.custom = runningArguments[2] or Themes.aero
+Themes.custom = runningArguments[3] or Themes.aero
 
 
 local PlayerTypes = {
