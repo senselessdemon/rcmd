@@ -10,7 +10,7 @@ local AUTO_TEXT_RESIZE = true
 local DYNAMIC_TERMINAL = false -- currently in BETA, but mostly functional
 local OPEN_HOTKEY = Enum.KeyCode.BackSlash
 
-local VERSION = "v0.2.6"
+local VERSION = "v0.3.1"
 
 local startTime = tick()
 
