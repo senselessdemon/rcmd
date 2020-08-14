@@ -2292,7 +2292,7 @@ function Notification:display()
 		end
 	end
 	
-	self.controls.close.MouseButton1Click:Connect(function()
+	self.buttons.close.MouseButton1Click:Connect(function()
 		closing = true
 		close(false)
 	end)
@@ -2328,7 +2328,7 @@ function Notification:determineSize(text)
 end
 
 function Notification:build()
-	local container = Instance.new("TextBox", self.handler.gui)
+	local container = Instance.new("TextButton", self.handler.gui)
 	local notification = Instance.new("Frame", container)
 	local uiCorner = Instance.new("UICorner", notification)
 	local shadow = Instance.new("ImageLabel", notification)
@@ -2346,8 +2346,7 @@ function Notification:build()
 	container.Size = UDim2.new(0, 200, 0, 50)
 	container.Position = UDim2.new(2, 0, 2, 0)
 	container.Text = ""
-	container.TextEditable = false
-
+	
 	notification.Name = "Content"
 	notification.ZIndex = 2
 	notification.Size = UDim2.new(1, 0, 1, 0)
