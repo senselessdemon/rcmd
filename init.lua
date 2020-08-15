@@ -7,10 +7,10 @@ if _G.rCMD and _G.rCMD.running then
 end
 
 local AUTO_TEXT_RESIZE = true
-local DYNAMIC_TERMINAL = false -- currently in BETA, but mostly functional
+local TERMINAL_MODE = true
 local OPEN_HOTKEY = Enum.KeyCode.BackSlash
 
-local VERSION = "v0.3.1"
+local VERSION = "v0.3.2"
 
 local startTime = tick()
 
@@ -40,8 +40,8 @@ local mouse = localPlayer:GetMouse()
 
 --local loadstring = require(script.Loadstring)
 
-DYNAMIC_TERMINAL = runningArguments[1] or DYNAMIC_TERMINAL
-OPEN_HOTKEY = runningArguments[2] or OPEN_HOTKEY
+TERMINAL_MODE = runningArguments[1] == nil and TERMINAL_MODE or runningArguments[1]
+OPEN_HOTKEY = runningArguments[2] == nil and OPEN_HOTKEY or runningArguments[2]
 
 
 function getIdentity()
@@ -2254,7 +2254,7 @@ function Notification:display()
 	self.body.TextScaled = not self.body.TextScaled
 	
 	for _, existingNotification in pairs(self.handler.notifications) do
-		if existingNotification.container ~= self.container then
+		if existingNotification.container ~= self.container and existingNotification.container.Parent then
 			existingNotification.container:TweenPosition(UDim2.new(
 				1, -15,
 				0, existingNotification.container.AbsolutePosition.Y + existingNotification.container.AbsoluteSize.Y - existingNotification.container.AbsoluteSize.Y - 15
@@ -3135,7 +3135,7 @@ function Dock.new(handler)
 	local self = setmetatable({
 		handler = handler,
 		size = 27.5,
-		dynamic = DYNAMIC_TERMINAL,
+		dynamic = not TERMINAL_MODE,
 		elements = {}
 	}, Dock)
 
@@ -3435,7 +3435,9 @@ function List:addItem(text, onHover)
 		hoverIndicator.Name = "Hover"
 		hoverIndicator.Value = onHover
 		
-		self.handler.mouseHover:addElement(textLabel)
+		self.handler.mouseHover:addElement(textLabel, nil, function(x, y)
+			return self.window:isOnTop()
+		end)
 	end
 	
 	TweenService:Create(textLabel, TweenInfo.new(0.5), {
@@ -4094,7 +4096,7 @@ function CommandSystem.new()
 
 	self.windowHandler = WindowHandler.new()
 	self.notificationHandler = NotificationHandler.new(self.windowHandler, callback)
-	if DYNAMIC_TERMINAL then
+	if not TERMINAL_MODE then
 		self.commandBar = CommandBar.new(self.windowHandler, OPEN_HOTKEY, callback)
 		self.commandBar.defaultCallback = callback
 	else
