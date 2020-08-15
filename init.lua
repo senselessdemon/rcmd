@@ -7,7 +7,7 @@ if _G.rCMD and _G.rCMD.running then
 end
 
 local AUTO_TEXT_RESIZE = true
-local TERMINAL_MODE = true
+local TERMINAL_MODE = false
 local OPEN_HOTKEY = Enum.KeyCode.BackSlash
 
 local VERSION = "v0.3.2"
