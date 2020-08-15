@@ -10,7 +10,7 @@ local AUTO_TEXT_RESIZE = true
 local TERMINAL_MODE = false
 local OPEN_HOTKEY = Enum.KeyCode.BackSlash
 
-local VERSION = "v0.3.2"
+local VERSION = "v0.3.3"
 
 local startTime = tick()
 
@@ -256,6 +256,20 @@ local Themes = {
 		roundness = UDim.new(0, 0),
 		background = Color3.fromRGB(46, 46, 47),
 		headerBackground = Color3.fromRGB(36, 36, 37),
+		text = Color3.fromRGB(235, 235, 235),
+		textBox = Color3.fromRGB(210, 210, 210),
+		boxPrefix = Color3.fromRGB(255, 255, 255),
+		suggestion = Color3.fromRGB(178, 178, 178),
+		transparency = 0,
+		shadow = true,
+	},
+	
+	synapse = {
+		controlAlignment = Enum.HorizontalAlignment.Right,
+		controlRoundness = UDim.new(0, 0),
+		roundness = UDim.new(0, 0),
+		background = Color3.fromRGB(30, 30, 30),
+		headerBackground = Color3.fromRGB(61, 61, 61),
 		text = Color3.fromRGB(235, 235, 235),
 		textBox = Color3.fromRGB(210, 210, 210),
 		boxPrefix = Color3.fromRGB(255, 255, 255),
@@ -2253,7 +2267,7 @@ function Notification:display()
 	self.body.TextScaled = not self.body.TextScaled
 	self.body.TextScaled = not self.body.TextScaled
 	
-	for _, existingNotification in pairs(self.handler.notifications) do
+	for _, existingNotification in ipairs(self.handler.notifications) do
 		if existingNotification.container ~= self.container and existingNotification.container.Parent then
 			existingNotification.container:TweenPosition(UDim2.new(
 				1, -15,
@@ -2276,7 +2290,7 @@ function Notification:display()
 		end)
 
 		for _, existingNotification in pairs(self.handler.notifications) do
-			if existingNotification.container ~= self.container and existingNotification.container.AbsolutePosition.Y < self.container.container.AbsolutePosition.Y then
+			if existingNotification.container ~= self.container and existingNotification.container.AbsolutePosition.Y < self.container.AbsolutePosition.Y then
 				existingNotification.container:TweenPosition(UDim2.new(
 					1, -15,
 					0, existingNotification.container.AbsolutePosition.Y + existingNotification.container.AbsoluteSize.Y + self.container.AbsoluteSize.Y + 15
@@ -2633,16 +2647,16 @@ function Window:allocateSpace(size, maxCycles)
 		local updatedPosition = position + incrementDelta
 		local endPosition = updatedPosition + size
 
-		--[[updatedPosition = Vector2.new(
+		updatedPosition = Vector2.new(
 			updatedPosition.X % camera.ViewportSize.X,
 			updatedPosition.Y % camera.ViewportSize.Y
-		)]]
+		)
 
-		if endPosition.X > camera.ViewportSize.X then
+		--[[if endPosition.X > camera.ViewportSize.X then
 			updatedPosition = Vector2.new(0, updatedPosition.Y)
 		elseif endPosition.Y > camera.ViewportSize.Y then
 			updatedPosition = Vector2.new(updatedPosition.X, 0)
-		end
+		end]]
 
 		position = updatedPosition
 		cycleIndex = cycleIndex + 1
@@ -3436,7 +3450,7 @@ function List:addItem(text, onHover)
 		hoverIndicator.Value = onHover
 		
 		self.handler.mouseHover:addElement(textLabel, nil, function(x, y)
-			return self.window:isOnTop()
+			return self.window:isOnTop(x, y)
 		end)
 	end
 	
