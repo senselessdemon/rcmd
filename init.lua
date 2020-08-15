@@ -914,7 +914,7 @@ local Commands = {
 		name = "remoteSpy",
 		description = "Executes a remote-spy script",
 		process = function(self, arguments, commandSystem)
-			commandSystem:executeCommand(commandSystem:findCommand("loadScript"), {
+			commandSystem:executeCommandByCall("loadScript", {
 				"https://raw.githubusercontent.com/Nootchtai/FrostHook_Spy/master/Spy.lua"
 			}, true)
 		end
@@ -1113,7 +1113,7 @@ local Commands = {
 		description = "Makes the local character VR",
 		aliases = {"vr"},
 		process = function(self, arguments, commandSystem)
-			commandSystem:executeCommand(commandSystem:findCommand("loadScript"), {
+			commandSystem:executeCommandByCall("loadScript", {
 				"https://ghostbin.co/paste/yb288/raw"
 			}, true)
 		end
@@ -1124,7 +1124,7 @@ local Commands = {
 		description = "Loads the old Roblox console",
 		aliases = {"vr"},
 		process = function(self, arguments, commandSystem)
-			commandSystem:executeCommand(commandSystem:findCommand("loadScript"), {
+			commandSystem:executeCommandByCall("loadScript", {
 				"https://pastebin.com/raw/i35eCznS"
 			}, true)
 		end
@@ -1233,7 +1233,7 @@ local Commands = {
 			local character = localPlayer.Character
 			if character then
 				local location = character:GetPrimaryPartCFrame()
-				commandSystem:executeCommand(commandSystem:findCommand("respawn"), {}, true)
+				commandSystem:executeCommandByCall("respawn", {}, true)
 				
 				RunService.RenderStepped:Wait()
 				local humanoidRootPart = localPlayer:WaitForChild("HumanoidRootPart")
@@ -3661,6 +3661,7 @@ function Task.new(process, errorHandler)
 			end
 		end,
 	})
+	
 	setfenv(self.process, self.environmentProxy)
 	
 	return self
@@ -3997,7 +3998,7 @@ function CommandSystem:executeCommand(command, processType, arguments, isNested)
 	if command.requiresTool and not getTool() then
 		return self:error("You must have a tool to use this command", true)
 	end
-	
+
 	local task = Task.new(command[processType])
 	task.yields = true
 	task.thread = false
@@ -4013,6 +4014,13 @@ function CommandSystem:executeCommand(command, processType, arguments, isNested)
 	end
 	
 	return response
+end
+
+function CommandSystem:executeCommandByCall(call, ...)
+	local command, processType = self:findCommand(call)
+	if command and processType then
+		self:executeCommand(command, processType, ...)
+	end
 end
 
 function CommandSystem:executeTree(tree)
@@ -4115,6 +4123,12 @@ function CommandSystem.new()
 	if not TERMINAL_MODE then
 		self.commandBar = CommandBar.new(self.windowHandler, OPEN_HOTKEY, callback)
 		self.commandBar.defaultCallback = callback
+		
+		local notification = self.notificationHandler:addNotification("Welcome to rCMD", "Click here to open the help window", 10)
+		notification.clicked:Connect(function()
+			self:executeCommandByCall("help", {}, true)
+		end)
+		notification:display()
 	else
 		self.terminal = Terminal.new(self.windowHandler, callback)
 		self.terminal.defaultCallback = callback
@@ -4137,7 +4151,7 @@ _G.rCMD = {
 	running = true,
 }
 
--- if you were looking for any of that obfuscated getfenv stuff, you just got caught laking
+-- if you were looking for any of that obfuscated getfenv stuff, you just got caught lacking
 -- this script doesnt have any of that stuff, so chill
 -- i'm not that type of guy
 
