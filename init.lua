@@ -1293,6 +1293,7 @@ local Commands = {
 	{
 		name = "to",
 		description = "Teleports you to the given player",
+		aliases = {"goto", "teleportTo"},
 		arguments = {
 			{
 				name = "to",
@@ -1305,8 +1306,8 @@ local Commands = {
 				local character1 = player.Character
 				if character1 and character1.PrimaryPart then
 					local character2 = arguments.to.Character
-					if character2 then
-						character2:SetPrimaryPartCFrame(character1.PrimaryPart.CFrame + Vector3.new(math.random(-5, 5), 0, math.random(-5, 5)))
+					if character2 and character2.PrimaryPart then
+						character1:SetPrimaryPartCFrame(character2:GetPrimaryPartCFrame() + Vector3.new(math.random(-5, 5), 0, math.random(-5, 5)))
 					end
 				end
 			end
@@ -1352,6 +1353,7 @@ local Commands = {
 	{
 		name = "animation",
 		description = "Plays the given animation",
+		aliases = {"anim"},
 		arguments = {
 			{
 				name = "animationId",
