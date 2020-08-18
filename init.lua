@@ -589,6 +589,7 @@ local Commands = {
 				local help = {
 					"rCMD " .. VERSION,
 					"Your executor is " .. getExecutor(),
+					"Filtering is " .. (Workspace.FilteringEnabled and "enabled" or "disabled"),
 					"This script is running at level " .. getIdentity(),
 					"To view a list of commands, enter \"cmds\"",
 					"To view info on a specific command, enter \"help [command]\"",
