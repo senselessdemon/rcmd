@@ -916,7 +916,7 @@ local Commands = {
 		description = "Executes a remote-spy script",
 		process = function(self, arguments, commandSystem)
 			commandSystem:executeCommandByCall("loadScript", {
-				"https://raw.githubusercontent.com/Nootchtai/FrostHook_Spy/master/Spy.lua"
+				url = "https://raw.githubusercontent.com/Nootchtai/FrostHook_Spy/master/Spy.lua"
 			}, true)
 		end
 	},
@@ -1115,7 +1115,7 @@ local Commands = {
 		aliases = {"vr"},
 		process = function(self, arguments, commandSystem)
 			commandSystem:executeCommandByCall("loadScript", {
-				"https://ghostbin.co/paste/yb288/raw"
+				url = "https://ghostbin.co/paste/yb288/raw"
 			}, true)
 		end
 	},
@@ -1126,7 +1126,7 @@ local Commands = {
 		aliases = {"vr"},
 		process = function(self, arguments, commandSystem)
 			commandSystem:executeCommandByCall("loadScript", {
-				"https://pastebin.com/raw/i35eCznS"
+				url = "https://pastebin.com/raw/i35eCznS"
 			}, true)
 		end
 	},
@@ -1505,6 +1505,26 @@ local Commands = {
 	},
 	
 	{
+		name = "noRecoil",
+		description = "Disables any sort of recoil",
+		arguments = {
+			name = "enabled",
+			type = "bool"
+		},
+		process = function(self, arguments, commandSystem)
+			local randomHook
+			randomHook = hookfunction(math.random, function(a, b)
+				if a and b then
+					b = a
+				else
+					return 0
+				end
+				return randomHook(a, b)
+			end)
+		end
+	},
+	
+	{
 		name = "fly",
 		description = "Flies the given player(s)",
 		arguments = {
@@ -1731,7 +1751,7 @@ local Commands = {
 	{
 		name = "esp",
 		description = "Toggles ESP",
-		opposites = {"extraSensoryPerception"},
+		aliases = {"extraSensoryPerception"},
 		arguments = {
 			{
 				name = "enabled",
@@ -1751,6 +1771,27 @@ local Commands = {
 			else
 				esp:hide()
 			end
+		end,
+	},
+	
+	{
+		name = "aimbot",
+		description = "Toggles aimbot",
+		arguments = {
+			{
+				name = "enabled",
+				type = "boolean"
+			},
+		},
+		process = function(self, arguments, commandSystem)
+			if not commandSystem.cache:get("aimbot") then
+				local aimbot = commandSystem.classes.Aimbot.new()
+				aimbot:start()
+				commandSystem.cache:set("aimbot", aimbot)
+			end
+			
+			local aimbot = commandSystem.cache:get("aimbot")
+			aimbot.enabled = arguments.enabled
 		end,
 	},
 	
@@ -1777,6 +1818,35 @@ local Commands = {
 			if not arguments.enabled then
 				commandSystem.cache:get("clickTeleport"):Disconnect()
 				commandSystem.cache:remove("clickTeleport")
+			end
+		end,
+	},
+	
+	{
+		name = "mlgMode",
+		description = "Toggles MLG mode",
+		aliases = {"mlg"},
+		arguments = {
+			{
+				name = "enabled",
+				type = "boolean"
+			}	
+		},
+		process = function(self, arguments, commandSystem)
+			if arguments.enabled then 
+				local music = Instance.new("Sound", workspace)
+				music.SoundId = "rbxassetid://234298689"
+				music:Play()
+				commandSystem.cache:set("mlg", music)
+				commandSystem:executeCommandByCall("esp", {enabled = true})
+				commandSystem:executeCommandByCall("aimbot", {enabled = true})
+			else
+				local existingMlg = commandSystem.cache:get("mlg")
+				if existingMlg then
+					existingMlg:Destroy()
+				end
+				commandSystem:executeCommandByCall("esp", {enabled = false})
+				commandSystem:executeCommandByCall("aimbot", {enabled = false})
 			end
 		end,
 	},
@@ -2070,6 +2140,168 @@ function Shadow.new(frame)
 	return self
 end
 ]]
+
+
+local Aimbot = {}
+Aimbot.__index = Aimbot
+
+function Aimbot:validateTarget(player)
+	return player ~= localPlayer and ((self.teamCheck and player.Team ~= localPlayer.Team) or true)
+end
+
+function Aimbot:mapWorldToScreen(...)
+	return camera:WorldToScreenPoint(...)
+end
+
+function Aimbot:distanceFromCenter(x, y)
+	return (Vector2.new(x, y) - camera.ViewpoerSize/2).magnitude
+end
+
+function Aimbot:checkLineOfSight(part, ...)
+	return localPlayer.Character and camera:GetPartsObscuringTarget({part}, {camera, localPlayer.Character, ...})
+end
+
+function Aimbot:getTargets()
+	local targets = {}
+	for _, player in ipairs(Players:GetPlayers()) do
+		if self:validateTarget(player) and player.Character then
+			targets[#targets+1] = player.Character
+		end
+	end
+	return targets
+end
+
+function Aimbot:getTarget()
+	local target
+	local distance = math.huge
+	
+	local localCharacter = localPlayer.Character
+	if localCharacter and localCharacter.PrimaryPart then
+		local localPosition = localCharacter:GetPrimaryPartCFrame().p
+		
+		for _, character in ipairs(self:getTargets()) do
+			if character and character.PrimaryPart then
+				local position = character:GetPrimaryPartCFrame().p
+				if not distance or (localPosition - position).magnitude < distance then
+					target = Players
+					distance = (localPosition - position).magnitude
+				end
+			end
+		end
+	end
+	
+	return target, distance
+end
+
+function Aimbot:aimAt(x, y)
+	local center = camera.ViewportSize / 2
+	local targetX
+	local targetY
+	
+	if x ~= 0 then
+		if x > center.X then
+			targetX = -(center.X - x)
+			targetX = targetX / self.speed
+			if targetX + center.X > center.X * 2 then
+				targetX = 0
+			end
+		end
+		if x < center.X then
+			targetX = x - center.X
+			targetX = targetX / self.speed
+			if targetX + center.X < 0 then
+				targetX = 0
+			end
+		end
+	end
+	
+	if y ~= 0 then
+		if x > center.X then
+			targetY = -(center.Y - x)
+			targetY = targetY / self.speed
+			if targetY + center.Y > center.Y * 2 then
+				targetY = 0
+			end
+		end
+		if x < center.Y then
+			targetY = y - center.Y
+			targetY = targetY / self.speed
+			if targetY + center.Y < 0 then
+				targetY = 0
+			end
+		end
+	end	
+	
+	return Vector2.new(targetX, targetY)
+end
+
+function Aimbot:moveMouse(...)
+	return (mousemoverel or Input and Input.MoveMouse or function(...) end)(...)
+end
+
+function Aimbot:shoot()
+	if mouse1press and mouse1release then
+		mouse1press()
+		wait()
+		mouse1release()
+	elseif Input and Input.LeftClick then
+		Input.LeftClick()
+	end
+end
+
+function Aimbot:update()
+	local target = self:getTarget()
+	if target then
+		local character = target.Character
+		if character then
+			local targetPart = character:FindFirstChild(self.targetChild or "HumanoidRootPart")
+			if targetPart then
+				if self:checkLineOfSight(targetPart.Position, character) and self.visiblilityCheck then
+					local point = self:mapWorldToScreen(targetPart.Position)
+					local distance = self:aimAt(point.X + self.aimOffset.X, point.Y + self.aimOffset.Y + 32)
+					self:moveMouse(distance.X, distance.Y)
+					
+					if self.autoShoot then
+						RunService.RenderStepped:Wait()
+						self:shoot()
+					end
+				end
+			end
+		end
+	end
+end
+
+function Aimbot:start()
+	self.connections.update = RunService.Stepped:Connect(function()
+		if self.enabled then
+			self:update()
+		end
+	end)
+end
+
+function Aimbot:stop()
+	for _, connection in pairs(self.connections) do
+		connection:Disconnect()
+	end
+end
+
+function Aimbot.new()
+	local self = setmetatable({
+		connections = {},
+		targetChild = "Head",
+		speed = 5,
+		aimOffset = {
+			x = 0,
+			y = 0
+		},
+		teamCheck = true,
+		visibleCheck = false,
+		autoShoot = false,
+		enabled = false
+	}, Aimbot)
+	
+	return self
+end
 
 
 local MouseHover = {}
@@ -4236,6 +4468,7 @@ function CommandSystem.new()
 			InputBinder = InputBinder,
 			Cache = Cache,
 			ESP = ESP,
+			Aimbot = Aimbot,
 			MouseHover = MouseHover,
 			CommandBar = CommandBar,
 			Notification = Notification,
