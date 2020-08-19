@@ -599,7 +599,7 @@ local Commands = {
 					"rCMD's Repository: https://github.com/senslessdemon/rcmd",
 					"Our Discord server: https://discord.io/demonden"
 				}
-				commandSystem:createList("Help", help)
+				commandSystem:createList("Help", help, UDim2.new(0, 375, 0, 250))
 			else
 				local command = arguments.command
 				if command.hidden and not arguments.core.force then
@@ -1402,6 +1402,60 @@ local Commands = {
 	},
 
 	{
+		name = "complteNoclip",
+		description = "Fully noclips the given player(s)",
+		aliases = {"fullNoclip"},
+		opposites = {"complteClip", "fullClip"},
+		arguments = {
+			{
+				name = "players",
+				type = "player(s)"
+			},
+		},
+		process = function(self, arguments, commandSystem)
+			if commandSystem.cache:get("completeNoclip") then
+				commandSystem.cache:remove("completeNoclip")
+			end
+
+			local connections = {}
+			for _, target in ipairs(arguments.players) do
+				local character = target.Character
+				if character then
+					local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+					local humanoid = character:FindFirstChild("Humanoid")
+					local originalAltitude = humanoidRootPart.CFrame.Y
+
+					if humanoidRootPart and humanoid then
+						RunService.RenderStepped:Wait()
+						commandSystem.cache:set("completeNoclip", true)
+
+						connections[target] = RunService.RenderStepped:Connect(function()
+							if not commandSystem.cache:get("completeNoclip") then
+								return connections[target]:Disconnect()
+							end
+
+							if character and humanoid and humanoidRootPart then
+								local radX, radY, radZ = camera.CFrame:ToOrientation()
+
+								humanoidRootPart.CFrame = CFrame.new(
+									humanoidRootPart.CFrame.X,
+									originalAltitude,
+									humanoidRootPart.CFrame.Z
+								) * CFrame.fromEulerAnglesXYZ(0, radY, radZ)
+
+								humanoid:ChangeState(Enum.HumanoidStateType.StrafingNoPhysics)
+							end
+						end)
+					end
+				end
+			end
+		end,
+		reverseProcess = function(self, arguments, commandSystem)
+			commandSystem.cache:remove("completeNoclip")
+		end
+	},
+	
+	{
 		name = "noclip",
 		description = "Noclips the given player(s)",
 		opposites = {"clip"},
@@ -1434,15 +1488,11 @@ local Commands = {
 							end
 
 							if character and humanoid and humanoidRootPart then
-								local radX, radY, radZ = camera.CFrame:ToOrientation()
-
-								humanoidRootPart.CFrame = CFrame.new(
-									humanoidRootPart.CFrame.X,
-									originalAltitude,
-									humanoidRootPart.CFrame.Z
-								) * CFrame.fromEulerAnglesXYZ(0, radY, radZ)
-
-								humanoid:ChangeState(Enum.HumanoidStateType.StrafingNoPhysics)
+								for _, child in ipairs(character:GetDescendants()) do
+									if child:IsA("BasePart") and child.CanCollide then
+						   				child.CanCollide = false
+									end
+								end
 							end
 						end)
 					end
@@ -1451,6 +1501,97 @@ local Commands = {
 		end,
 		reverseProcess = function(self, arguments, commandSystem)
 			commandSystem.cache:remove("noclip")
+		end
+	},
+	
+	{
+		name = "fly",
+		description = "Flies the given player(s)",
+		arguments = {
+			{
+				name = "players",
+				type = "player(s)"
+			},
+		},
+		process = function(self, arguments, commandSystem)
+			if commandSystem.cache:get("fly") then
+				commandSystem.cache:remove("fly")
+			end
+
+			local connections = {}
+			for _, target in ipairs(arguments.players) do
+				local character = target.Character
+				if character then
+					local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+					local humanoid = character:FindFirstChild("Humanoid")
+					local originalAltitude = humanoidRootPart.CFrame.Y
+
+					if humanoidRootPart and humanoid then
+						RunService.RenderStepped:Wait()
+
+						local maxSpeed, magnitude, acceleration, direction, cframe = 100, 5, Vector3.new()
+						local bodyGyro = Instance.new("BodyGyro", humanoidRootPart)
+						bodyGyro.Parent = humanoidRootPart
+						bodyGyro.D = 200
+						bodyGyro.CFrame = humanoidRootPart.CFrame
+						
+						local bodyVelocity = Instance.new("BodyVelocity", humanoidRootPart)
+						bodyVelocity.Parent = humanoidRootPart
+						bodyVelocity.P = 5000
+						
+						local indicator = Instance.new("BoolValue", humanoidRootPart)
+						indicator.Name = 'Fly'
+						indicator.Changed:connect(function(property)
+							if property then
+								local force = property and Vector3.new(9e9, 9e9, 9e9) or Vector3.new()
+								humanoid.PlatformStand = property
+								bodyGyro.MaxTorque = force
+								bodyVelocity.MaxForce = force
+								connection = humanoid.Changed:connect(function(Wat)
+									if not indicator.Parent then
+										connection:disconnect()
+									end
+									humanoid.Jump = false
+								end)
+							else
+								humanoid.PlatformStand = false
+								humanoidRootPart:FindFirstChild('BodyGyro'):Destroy()
+								humanoidRootPart:FindFirstChild('BodyVelocity'):Destroy()
+								
+								if indicator and indicator.Parent then
+									indicator.Value = false
+									indicator:Destroy()
+								end
+							end
+						end)
+						indicator.Value = true
+						commandSystem.cache:set("fly", indicator)
+						
+						connections[target] = RunService.RenderStepped:Connect(function()
+							if indicator.Value then
+								local direction = humanoid.MoveDirection
+								local cframe = camera.CoordinateFrame
+								direction = (cframe:inverse() * CFrame.new(cframe.p + direction)).p
+								acceleration = acceleration * 0.95
+								local inABox = UserInputService:GetFocusedTextBox()
+								acceleration = Vector3.new(
+									math.max(-maxSpeed, math.min(maxSpeed, acceleration.x + direction.x * magnitude)),
+									math.max(-maxSpeed, math.min(maxSpeed and not inABox and ((UserInputService:IsKeyDown(Enum.KeyCode.Space) or UserInputService:IsKeyDown(Enum.KeyCode.E)) and acceleration.y + magnitude or (UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) or UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) or UserInputService:IsKeyDown(Enum.KeyCode.Q)) and acceleration.y - magnitude) or acceleration.y)),
+									math.max(-maxSpeed, math.min(maxSpeed, acceleration.z + direction.z * magnitude))
+								)
+								bodyGyro.cframe = cframe
+								bodyVelocity.velocity = (cframe * CFrame.new(acceleration)).p - cframe.p
+							end
+						end)
+					end
+				end
+			end
+		end,
+		reverseProcess = function(self, arguments, commandSystem)
+			local indicator = commandSystem.cache:get("fly")
+			if indicator then
+				indicator.Value = false
+			end
 		end
 	},
 
@@ -2293,7 +2434,7 @@ function Notification:display()
 		end)
 
 		for _, existingNotification in pairs(self.handler.notifications) do
-			if existingNotification.container ~= self.container and existingNotification.container.AbsolutePosition.Y < self.container.AbsolutePosition.Y then
+			if existingNotification.container.Parent and existingNotification.container ~= self.container and existingNotification.container.AbsolutePosition.Y < self.container.AbsolutePosition.Y then
 				existingNotification.container:TweenPosition(UDim2.new(
 					1, -15,
 					0, existingNotification.container.AbsolutePosition.Y + existingNotification.container.AbsoluteSize.Y + self.container.AbsoluteSize.Y + 15
@@ -2593,7 +2734,7 @@ function Window:toAbsolute(size)
 end
 
 function Window:isOnTop(x, y)
-	for _, window in ipairs(self.handler.windows) do
+	for _, window in pairs(self.handler.windows) do
 		local position = window.container.AbsolutePosition
 		local size = window.container.AbsoluteSize
 		
@@ -2612,9 +2753,9 @@ end
 
 function Window:runOverlapping()
 	local acceptedInputs = {Enum.UserInputType.MouseButton1, Enum.UserInputType.Touch}
-	self.container.InputBegan:Connect(function(input)
-		if table.find(acceptedInputs, input.UserInputType) then
-			if self:isOnTop(input.Position.X, input.Position.Y) then
+	local function editOverlap(input)
+		if not input or table.find(acceptedInputs, input.UserInputType) then
+			if not input or self:isOnTop(input.Position.X, input.Position.Y) then
 				local highestZIndex = self.container.ZIndex
 
 				for _, window in ipairs(self.handler.windows) do
@@ -2626,7 +2767,11 @@ function Window:runOverlapping()
 				self.container.ZIndex = highestZIndex + 1
 			end
 		end
-	end)
+	end
+
+	self.container.InputBegan:Connect(editOverlap)
+	self.header.InputBegan:Connect(editOverlap)
+	editOverlap()
 end
 
 function Window:allocateSpace(size, maxCycles)
@@ -2679,7 +2824,7 @@ function Window:runDragging()
 	local startPosition
 	
 	local function update(input)
-		if not self.draggable or self.maximized then
+		if not self.draggable or self.maximized or not self:isOnTop(input.Position.X, input.Position.Y) then
 			return
 		end
 		
@@ -3464,8 +3609,8 @@ function List:addItem(text, onHover)
 	return textLabel
 end
 
-function List:build()
-	local window = self.handler:addWindow(self.name, UDim2.new(0, 250, 0, 300))
+function List:build(size)
+	local window = self.handler:addWindow(self.name, size or UDim2.new(0, 250, 0, 300))
 	local content = window:add("ScrollingFrame")
 	local contentLayout = window:add("UIListLayout", content)
 	
@@ -3498,9 +3643,9 @@ function List:build()
 	end
 end
 
-function List:init(initialData)
+function List:init(initialData, ...)
 	if not self.window then
-		self:build()
+		self:build(...)
 	end
 	
 	spawn(function() -- i know spawn sucks ass for performance but fight me skrub :p
@@ -3525,13 +3670,13 @@ function List:formatData(rawData)
 	return data
 end
 
-function List.new(handler, name, data)
+function List.new(handler, name, data, ...)
 	local self = setmetatable({
 		handler = handler,
 		name = name
 	}, List)
 	
-	self:init(self:formatData(data or {}))
+	self:init(self:formatData(data or {}), ...)
 	
 	return self
 end
@@ -3863,13 +4008,13 @@ function CommandSystem:notify(message)
 	end
 end
 
-function CommandSystem:createList(name, listData)
+function CommandSystem:createList(name, listData, ...)
 	if self.terminal then
 		for _, item in ipairs(listData) do
 			self.terminal:addText(table.concat(item, " - "))
 		end
 	else
-		List.new(self.windowHandler, name, listData)
+		List.new(self.windowHandler, name, listData, ...)
 	end
 end
 
@@ -3884,7 +4029,7 @@ end
 function CommandSystem:getTargets(argument, command)
 	local targets = {}
 
-	if argument.raw == "" then
+	if self.parser:trim(argument.raw) == "" then
 		targets = {localPlayer}
 	end
 	
@@ -3922,7 +4067,7 @@ function CommandSystem:getTargets(argument, command)
 		end
 	end
 	
-	return targets
+	return targets or {}
 end
 
 function CommandSystem:parseArguments(command, arguments, coreArguments)
