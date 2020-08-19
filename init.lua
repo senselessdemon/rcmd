@@ -4297,6 +4297,8 @@ _G.rCMD = {
 	running = true,
 }
 
+return commandSystem
+
 -- if you were looking for any of that obfuscated getfenv stuff, you just got caught lacking
 -- this script doesnt have any of that stuff, so chill
 -- i'm not that type of guy
