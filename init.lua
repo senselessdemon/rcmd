@@ -10,7 +10,7 @@ local AUTO_TEXT_RESIZE = true
 local TERMINAL_MODE = false
 local OPEN_HOTKEY = Enum.KeyCode.BackSlash
 
-local VERSION = "v0.3.6"
+local VERSION = "v0.3.7"
 
 local startTime = tick()
 
@@ -1246,6 +1246,7 @@ local Commands = {
 	{
 		name = "teleport",
 		description = "Teleports the given player(s) to the destination",
+		aliases = {"tp"},
 		arguments = {
 			{
 				name = "to",
@@ -1294,7 +1295,7 @@ local Commands = {
 	{
 		name = "to",
 		description = "Teleports you to the given player",
-		aliases = {"goto", "teleportTo"},
+		aliases = {"goto", "teleportTo", "tpTo"},
 		arguments = {
 			{
 				name = "to",
@@ -2252,19 +2253,16 @@ end
 function Aimbot:update()
 	local target = self:getTarget()
 	if target then
-		local character = target.Character
-		if character then
-			local targetPart = character:FindFirstChild(self.targetChild or "HumanoidRootPart")
-			if targetPart then
-				if self:checkLineOfSight(targetPart.Position, character) and self.visiblilityCheck then
-					local point = self:mapWorldToScreen(targetPart.Position)
-					local distance = self:aimAt(point.X + self.aimOffset.X, point.Y + self.aimOffset.Y + 32)
-					self:moveMouse(distance.X, distance.Y)
-					
-					if self.autoShoot then
-						RunService.RenderStepped:Wait()
-						self:shoot()
-					end
+		local targetPart = target:FindFirstChild(self.targetChild or "HumanoidRootPart")
+		if targetPart then
+			if self:checkLineOfSight(targetPart.Position, target) and self.visiblilityCheck then
+				local point = self:mapWorldToScreen(targetPart.Position)
+				local distance = self:aimAt(point.X + self.aimOffset.X, point.Y + self.aimOffset.Y + 32)
+				self:moveMouse(distance.X, distance.Y)
+				
+				if self.autoShoot then
+					RunService.RenderStepped:Wait()
+					self:shoot()
 				end
 			end
 		end
@@ -4261,7 +4259,7 @@ end
 function CommandSystem:getTargets(argument, command)
 	local targets = {}
 
-	if self.parser:trim(argument.raw) == "" then
+	if argument.raw == "" then
 		targets = {localPlayer}
 	end
 	
