@@ -10,7 +10,7 @@ local AUTO_TEXT_RESIZE = true
 local TERMINAL_MODE = false
 local OPEN_HOTKEY = Enum.KeyCode.BackSlash
 
-local VERSION = "v0.3.8"
+local VERSION = "v0.3.9"
 
 local startTime = tick()
 
@@ -1502,6 +1502,97 @@ local Commands = {
 		end,
 		reverseProcess = function(self, arguments, commandSystem)
 			commandSystem.cache:remove("noclip")
+		end
+	},
+	
+	{
+		name = "noclipFly",
+		description = "Noclips and flies the given player(s)",
+		aliases = {"flyNoclip"},
+		opposites = {"clipFly", "flyClip"},
+		arguments = {
+			{
+				name = "players",
+				type = "player(s)"
+			},
+		},
+		process = function(self, arguments, commandSystem)
+			if commandSystem.cache:get("noclipFly") then
+				commandSystem.cache:remove("noclipFly")
+			end
+
+			local connections = {}
+			for _, target in ipairs(arguments.players) do
+				local character = target.Character
+				if character then
+					local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+					local humanoid = character:FindFirstChild("Humanoid")
+					local originalAltitude = humanoidRootPart.CFrame.Y
+
+					if humanoidRootPart and humanoid then
+						RunService.RenderStepped:Wait()
+						commandSystem.cache:set("noclipFly", true)
+						connections[target] = {}
+						
+						local direction = {w = 0, s = 0, a = 0, d = 0} 
+						local speed = 2 
+						
+						connections[target].keyDown = mouse.KeyDown:connect(function(key)
+							if key:lower() == "w" then 
+								direction.w = 1 
+							elseif key:lower() == "s" then 
+								direction.s = 1 
+							elseif key:lower() == "a" then 
+								direction.a = 1 
+							elseif key:lower() == "d" then 
+								direction.d = 1 
+							elseif key:lower() == "q" then 
+								direction = speed + 1 
+							elseif key:lower() == "e" then 
+								direction = speed - 1 
+							end 
+						end) 
+						connections[target].keyUp = mouse.KeyUp:connect(function(key)
+							if key:lower() == "w" then 
+								direction.w = 0 
+							elseif key:lower() == "s" then 
+								direction.s = 0 
+							elseif key:lower() == "a" then 
+								direction.a = 0 
+							elseif key:lower() == "d" then 
+								direction.d = 0 
+							end 
+						end) 
+											
+						humanoidRootPart.Anchored = true 
+						humanoid.PlatformStand = true 
+						connections[target].changed = humanoid.Changed:connect(function() 
+							humanoid.PlatformStand = true 
+						end)
+
+						connections[target].renderStepped = RunService.Stepped:Connect(function()
+							if not commandSystem.cache:get("noclipFly") then
+								for _, connection in pairs(connections[target]) do
+									connection:Disconnect()
+								end
+								humanoidRootPart.Anchored = false
+								humanoid.PlatformStand = false
+								return
+							end
+
+							if character and humanoid and humanoidRootPart then
+								character:SetPrimaryPartCFrame(CFrame.new(
+									humanoidRootPart.Position,
+									camera.CFrame.p) * CFrame.Angles(0,math.rad(180),0) * CFrame.new((direction.d - direction.a)*speed, 0, (direction.s - direction.w) * speed
+								))
+							end
+						end)
+					end
+				end
+			end
+		end,
+		reverseProcess = function(self, arguments, commandSystem)
+			commandSystem.cache:remove("noclipFly")
 		end
 	},
 	
