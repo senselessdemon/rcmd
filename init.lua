@@ -10,7 +10,7 @@ local AUTO_TEXT_RESIZE = true
 local TERMINAL_MODE = false
 local OPEN_HOTKEY = Enum.KeyCode.BackSlash
 
-local VERSION = "v0.3.7"
+local VERSION = "v0.3.8"
 
 local startTime = tick()
 
@@ -1403,10 +1403,10 @@ local Commands = {
 	},
 
 	{
-		name = "complteNoclip",
+		name = "completeNoclip",
 		description = "Fully noclips the given player(s)",
 		aliases = {"fullNoclip"},
-		opposites = {"complteClip", "fullClip"},
+		opposites = {"completeClip", "fullClip"},
 		arguments = {
 			{
 				name = "players",
@@ -1483,7 +1483,7 @@ local Commands = {
 						RunService.RenderStepped:Wait()
 						commandSystem.cache:set("noclip", true)
 
-						connections[target] = RunService.RenderStepped:Connect(function()
+						connections[target] = RunService.Stepped:Connect(function()
 							if not commandSystem.cache:get("noclip") then
 								return connections[target]:Disconnect()
 							end
@@ -1771,6 +1771,33 @@ local Commands = {
 				esp:display()
 			else
 				esp:hide()
+			end
+		end,
+	},
+	
+	{
+		name = "xray",
+		description = "Toggles X-Ray vision",
+		aliases = {"x-ray"},
+		arguments = {
+			{
+				name = "enabled",
+				type = "boolean"
+			},
+		},
+		process = function(self, arguments, commandSystem)
+			if arguments.enabled then
+				for _, descendant in ipairs(Workspace:GetDescendants()) do
+					if descendant:IsA("BasePart") and not descendant.Parent:FindFirstChild("Humanoid") and not descendant.Parent.Parent:FindFirstChild("Humanoid") then
+						descendant.LocalTransparencyModifier = 0.5
+					end
+				end
+			else
+				for _, descendant in ipairs(Workspace:GetDescendants()) do
+					if descendant:IsA("BasePart") and not descendant.Parent:FindFirstChild("Humanoid") and not descendant.Parent.Parent:FindFirstChild("Humanoid") then
+						descendant.LocalTransparencyModifier = 0
+					end
+				end
 			end
 		end,
 	},
