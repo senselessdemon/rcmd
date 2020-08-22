@@ -1,4 +1,4 @@
--- SenslessDemon
+-- SenselessDemon
 
 local runningArguments = {...}
 
@@ -10,7 +10,7 @@ local AUTO_TEXT_RESIZE = true
 local TERMINAL_MODE = false
 local OPEN_HOTKEY = Enum.KeyCode.BackSlash
 
-local VERSION = "v0.3.9"
+local VERSION = "v0.4.0"
 
 local startTime = tick()
 
@@ -596,7 +596,7 @@ local Commands = {
 					"If you require further assistance, contact us",
 					"To report issues, create one on our repository.",
 					"You may also contrubute to rCMD there.",
-					"rCMD's Repository: https://github.com/senslessdemon/rcmd",
+					"rCMD's Repository: https://github.com/senselessdemon/rcmd",
 					"Our Discord server: https://discord.io/demonden"
 				}
 				commandSystem:createList("Help", help, UDim2.new(0, 375, 0, 250))
@@ -4652,4 +4652,4 @@ return commandSystem
 -- this script doesnt have any of that stuff, so chill
 -- i'm not that type of guy
 
--- SenslessDemon
+-- SenselessDemon
