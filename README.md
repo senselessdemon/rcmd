@@ -11,5 +11,5 @@ rCMD is a command executor and framework for use on the Roblox platform. It is m
 It's very simple to use. You can use either the entire script in your executor, or simply use a loadstring.
 
 ```
-loadstring(game:HttpGet("https://raw.githubusercontent.com/senslessdemon/rcmd/master/init.lua", true))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/senselessdemon/rcmd/master/init.lua", true))()
 ```
