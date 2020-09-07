@@ -51,12 +51,12 @@ function getIdentity()
 			currentIdentity = identity
 		end
 	end)
-
+	
 	currentIdentity = nil
 	printidentity()
 	repeat wait() until currentIdentity
 	messageConnection:Disconnect()
-
+	
 	return currentIdentity or 2
 end
 
@@ -82,7 +82,7 @@ function attach(target)
 	if getTool() then
 		local character = localPlayer.Character
 		local targetCharacter = target.Character
-
+		
 		if character and targetCharacter then
 			local humanoid = character:FindFirstChild("Humanoid")
 			local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
@@ -106,7 +106,7 @@ function attach(target)
 					math.random(-100, 100) / 200,
 					math.random(-100, 100) / 200,
 					math.random(-100, 100) / 200
-				))
+					))
 				
 				local connection
 				local lastCycle = 0
@@ -142,21 +142,21 @@ local Color3 = setmetatable({
 				element = math.floor(element / 16)
 				hex = ("0123456789abcdef"):sub(index, index) .. hex			
 			end
-	
+			
 			if #hex == 0 then
 				hex = "00"
 			elseif #hex == 1 then
 				hex = "0" .. hex
 			end
-	
+			
 			result = result .. hex
 		end
 		return result
 	end;
-
+	
 	fromHex = function(hex)
 		hex = hex:gsub("#","")
-	    return Color3.fromRGB(
+		return Color3.fromRGB(
 			tonumber("0x" .. hex:sub(1, 2)),
 			tonumber("0x" .. hex:sub(3, 4)),
 			tonumber("0x" .. hex:sub(5, 6))
@@ -179,7 +179,7 @@ local Themes = {
 		transparency = 0.01,
 		shadow = true,
 	},
-
+	
 	dark = {
 		controlAlignment = Enum.HorizontalAlignment.Left,
 		controlRoundness = UDim.new(0.5, 0),
@@ -193,7 +193,7 @@ local Themes = {
 		transparency = 0.01,
 		shadow = true,
 	},
-
+	
 	dracula = {
 		controlAlignment = Enum.HorizontalAlignment.Left,
 		controlRoundness = UDim.new(0.5, 0),
@@ -207,7 +207,7 @@ local Themes = {
 		transparency = 0.01,
 		shadow = true,
 	},
-
+	
 	materialDark = {
 		controlAlignment = Enum.HorizontalAlignment.Right,
 		controlRoundness = UDim.new(0.5, 0),
@@ -221,7 +221,7 @@ local Themes = {
 		transparency = 0.01,
 		shadow = true,
 	},
-
+	
 	radical = {
 		controlAlignment = Enum.HorizontalAlignment.Left,
 		controlRoundness = UDim.new(0.5, 0),
@@ -235,7 +235,7 @@ local Themes = {
 		transparency = 0.01,
 		shadow = true,
 	},
-
+	
 	aero = {
 		controlAlignment = Enum.HorizontalAlignment.Right,
 		controlRoundness = UDim.new(0, 0),
@@ -289,14 +289,14 @@ local PlayerTypes = {
 			return {localPlayer}
 		end
 	},
-
+	
 	{
 		calls = {"all", "everyone", "@a", "@e", "@everyone"},
 		process = function(command, parameter)
 			return Players:GetPlayers()
 		end
 	},
-
+	
 	{
 		calls = {"others", "everyoneElse", "@s"},
 		process = function(command, parameter)
@@ -324,14 +324,14 @@ local PlayerTypes = {
 			return targets
 		end
 	},
-
+	
 	{
 		calls = {"userId"},
 		process = function(command, parameter)
 			return {Players:GetPlayerByUserId(tonumber(parameter))}
 		end
 	},
-
+	
 	{
 		calls = {"group"},
 		process = function(command, parameter)
@@ -344,7 +344,7 @@ local PlayerTypes = {
 			return targets
 		end
 	},
-
+	
 	{
 		calls = {"team", "onTeam", "ofTeam"},
 		process = function(command, parameter)
@@ -355,7 +355,7 @@ local PlayerTypes = {
 			end
 		end
 	},
-
+	
 	{
 		calls = {"premium"},
 		process = function(command, parameter)
@@ -379,21 +379,21 @@ local ArgumentTypes = {
 			return argument.raw
 		end
 	},
-
+	
 	{
 		calls = {"int", "integer"},
 		process = function(argument)
 			return math.floor(tonumber(argument.raw) or 0)
 		end
 	},
-
+	
 	{
 		calls = {"number"},
 		process = function(argument)
 			return tonumber(argument.raw) or 0
 		end
 	},
-
+	
 	{
 		calls = {"boolean", "bool"},
 		process = function(argument)
@@ -401,14 +401,14 @@ local ArgumentTypes = {
 			return (argument == "on" or argument == "true" or argument == "yes") or false
 		end
 	},
-
+	
 	{
 		calls = {"player(s)", "target(s)", "players", "targets"},
 		process = function(argument, commandSystem)
 			return commandSystem:getTargets(argument)
 		end
 	},
-
+	
 	{
 		calls = {"player", "target", "individual"},
 		process = function(argument, commandSystem)
@@ -432,7 +432,7 @@ local ArgumentTypes = {
 			end
 		end
 	},
-
+	
 	{
 		calls = {"theme"},
 		expandable = true,
@@ -446,7 +446,7 @@ local ArgumentTypes = {
 			return commandSystem.themeSyncer.currentTheme
 		end
 	},
-
+	
 	{
 		calls = {"command", "cmd"},
 		process = function(argument, commandSystem)
@@ -480,7 +480,7 @@ local Commands = {
 			commandSystem.terminal:addText(arguments.message:reverse())
 		end
 	},
-
+	
 	{
 		name = "theme",
 		description = "Changes the theme of the interface",
@@ -497,7 +497,7 @@ local Commands = {
 			commandSystem.windowHandler.themeSyncer:updateTheme(Themes.white)
 		end
 	},
-
+	
 	{
 		name = "terminal",
 		description = "Opens a new terminal",
@@ -507,7 +507,7 @@ local Commands = {
 			commandSystem.terminal = commandSystem.classes.Terminal.new(commandSystem.windowHandler)
 		end,
 	},
-
+	
 	{
 		name = "advertise",
 		description = "Advertises rCMD. Thanks for the support!",
@@ -517,9 +517,9 @@ local Commands = {
 				commandSystem.cache:get("advertise"):Disconnect()
 				commandSystem.cache:remove("advertise")
 			end
-
+			
 			RunService.RenderStepped:Wait()
-
+			
 			local message = "Get rCMD: The best admin script! Our disquord is FYYET36!"
 			local updateThreshold = 5
 			local lastMessage = 0
@@ -536,7 +536,43 @@ local Commands = {
 			commandSystem.cache:remove("advertise")
 		end
 	},
-
+	
+	{
+		name = "mimic",
+		description = "Does a chat mimic",
+		aliases = {"copyCat"},
+		process = function(self, arguments, commandSystem)
+			if commandSystem.cache:get("mimic") then
+				commandSystem.cache:remove("mimic")
+			end
+			
+			local messageFormat = "[%s]: %s"
+			local connections = {}
+			local function addPlayer(player)
+				if not player == localPlayer then
+					connections[#connections+1] = player.Chatted:Connect(function(message)
+						if not commandSystem.cache:get("mimic") then
+							commandSystem.cache:remove("mimic")
+							for _, connection in ipairs(connections) do
+								connection:Disconnect()
+							end
+						end
+						
+						ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(messageFormat:format(player.Name, message), "All")
+					end)
+				end
+			end
+			
+			for _, player in ipairs(Players:GetPlayers()) do
+				addPlayer(player)
+			end
+			connections[#connections+1] = Players.PlayerAdded:Connect(addPlayer)
+		end,
+		reverseProcess = function(self, arguments, commandSystem)
+			commandSystem.cache:remove("mimic")
+		end
+	},
+	
 	{
 		name = "themes",
 		description = "Displays a list of available themes",
@@ -548,7 +584,7 @@ local Commands = {
 			commandSystem:createList("Themes", listData)
 		end,
 	},
-
+	
 	{
 		name = "rejoin",
 		description = "Allows you to rejoin the game",
@@ -556,7 +592,7 @@ local Commands = {
 			TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, localPlayer)
 		end,
 	},
-
+	
 	{
 		name = "close",
 		description = "Closes  (until executed again)",
@@ -564,7 +600,7 @@ local Commands = {
 			commandSystem:shutdown()
 		end,
 	},
-
+	
 	{
 		name = "exit",
 		description = "Closes the Roblox client",
@@ -572,7 +608,7 @@ local Commands = {
 			game:Shutdown()
 		end,
 	},
-
+	
 	{
 		name = "help",
 		description = "Gives some help",
@@ -617,21 +653,21 @@ local Commands = {
 				if arguments == {} then
 					arguments = {"none"}
 				end
-
+				
 				local data = {
 					"Name: " .. (command.name or "none"),
 					"Description: " .. (command.description or "none"),
 					"Aliases: { " .. table.concat(command.aliases or {"none"}, ", ") .. " }",
 					"Opposites: { " .. table.concat({"un"..command.name, unpack(command.opposites or {})}, ", ") .. " }",
 					"Arguments: { " .. table.concat(arguments, ", ") .. " }",
-					"Replicates: { " .. (command.noReplication and "no" or "yes"),
+					"Replicates: " .. (command.noReplication and "no" or "yes"),
 					"Reversable: " .. (command.reverseProcess and "yes" or "no")
 				}
 				commandSystem:createList("Command Info", data)
 			end
 		end,
 	},
-
+	
 	{
 		name = "commands",
 		description = "Displays a list of available commands",
@@ -647,7 +683,7 @@ local Commands = {
 			commandSystem:createList("Commands", listData)
 		end,
 	},
-
+	
 	{
 		name = "directory",
 		description = "Displays the children of a directory",
@@ -659,13 +695,13 @@ local Commands = {
 				end
 				return commandSystem.location:GetChildren()
 			end
-
+			
 			for _, child in ipairs(getChildren()) do
 				commandSystem.terminal:addText(child.Name)
 			end
 		end,
 	},
-
+	
 	{
 		name = "changeDirectory",
 		description = "Changes the directory",
@@ -679,7 +715,7 @@ local Commands = {
 		process = function(self, arguments, commandSystem)
 			for _, givenChild in ipairs(arguments.child:split("/")) do
 				local newLocation
-
+				
 				if commandSystem.location == game then
 					newLocation = game[givenChild]
 				else
@@ -689,14 +725,14 @@ local Commands = {
 						end
 					end
 				end
-
+				
 				if newLocation then
 					commandSystem.location = newLocation
 				end
 			end
 		end,
 	},
-
+	
 	{
 		name = "rename",
 		description = "Changes the given object to the given name",
@@ -723,13 +759,13 @@ local Commands = {
 					end
 				end
 			end
-
+			
 			if object then
 				object.Name = arguments.name
 			end
 		end,
 	},
-
+	
 	{
 		name = "changeDirectory..",
 		description = "Changes the directory to the parent",
@@ -738,7 +774,7 @@ local Commands = {
 			commandSystem.location = commandSystem.location.Parent
 		end,
 	},
-
+	
 	{
 		name = "makeDirectory",
 		description = "Creates a directory at the current location",
@@ -754,7 +790,7 @@ local Commands = {
 			directory.Name = arguments.name
 		end,
 	},
-
+	
 	{
 		name = "create",
 		description = "Creates an instance of the given class",
@@ -776,7 +812,7 @@ local Commands = {
 			end
 		end,
 	},
-
+	
 	{
 		name = "removeDirectory",
 		description = "Removes a directory at the current location",
@@ -789,19 +825,19 @@ local Commands = {
 		},
 		process = function(self, arguments, commandSystem)
 			local toDelete
-
+			
 			for _, child in ipairs(commandSystem.location:GetChildren()) do
 				if child.Name:sub(1, #arguments.child):lower() == arguments.child:lower() then
 					toDelete = child
 				end
 			end
-
+			
 			if toDelete then
 				toDelete:Destroy()
 			end
 		end,
 	},
-
+	
 	{
 		name = "displayLocation",
 		description = "Displays the current location",
@@ -810,7 +846,7 @@ local Commands = {
 			commandSystem.terminal:addText(commandSystem.location:GetFullName())
 		end,
 	},
-
+	
 	{
 		name = "lua",
 		terminalCommand = true,
@@ -818,16 +854,16 @@ local Commands = {
 		aliases = {"loadstring"},
 		process = function(self, arguments, commandSystem)
 			commandSystem.terminal:addText("Lua 5.1\nType \"exit\" to exit")
-
+			
 			local done = false
 			local function execute()
 				local prompt = commandSystem.terminal:addPrompt(">", function(code)
 					if not code:lower():find("exit") then
 						local didParse, parseResult = pcall(loadstring, code)
-
+						
 						if didParse then
 							local didExecute, executeResult = pcall(parseResult)
-
+							
 							if didExecute then
 								if executeResult and executeResult ~= "" then
 									commandSystem.terminal:addText(tostring(executeResult))
@@ -844,12 +880,12 @@ local Commands = {
 					end
 				end)
 			end
-
+			
 			execute()
 			repeat wait() until done
 		end,
 	},
-
+	
 	{
 		name = "loadstring",
 		description = "Executes the given string as lua",
@@ -862,10 +898,10 @@ local Commands = {
 		},
 		process = function(self, arguments, commandSystem)
 			local didParse, parseResult = pcall(loadstring, arguments.code)
-
+			
 			if didParse then
 				local didExecute, executeResult = pcall(parseResult)
-
+				
 				if didExecute then
 					if executeResult and executeResult ~= "" then
 						commandSystem:notify(tostring(executeResult))
@@ -878,7 +914,7 @@ local Commands = {
 			end
 		end,
 	},
-
+	
 	{
 		name = "loadScript",
 		description = "Executes the script at the given url",
@@ -910,7 +946,7 @@ local Commands = {
 			end
 		end,
 	},
-
+	
 	{
 		name = "remoteSpy",
 		description = "Executes a remote-spy script",
@@ -951,7 +987,7 @@ local Commands = {
 			end
 		end
 	},
-
+	
 	{
 		name = "jumpPower",
 		description = "Sets the local character's jump power",
@@ -1016,7 +1052,7 @@ local Commands = {
 			end
 		end,
 	},
-
+	
 	{
 		name = "bang",
 		hidden = true, -- stfu
@@ -1037,7 +1073,7 @@ local Commands = {
 			if commandSystem.cache:get("bang") then
 				commandSystem.cache:remove("bang")
 			end
-
+			
 			local character = localPlayer.Character
 			if character then
 				local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
@@ -1046,14 +1082,14 @@ local Commands = {
 					if humanoid.RigType == Enum.HumanoidRigType.R6 then
 						RunService.RenderStepped:Wait()
 						commandSystem.cache:set("bang", true)
-
+						
 						local animation = Instance.new("Animation")
 						animation.AnimationId = "rbxassetid://148840371"
-
+						
 						local animationTrack = humanoid:LoadAnimation(animation)
 						animationTrack:Play(0.1, 1, 1)
 						animationTrack:AdjustSpeed(arguments.speed == 0 and 3 or arguments.speed)
-
+						
 						local updateConnection
 						updateConnection = RunService.RenderStepped:Connnect(function()
 							if not commandSystem.cache:get("bang") then
@@ -1075,7 +1111,7 @@ local Commands = {
 			commandSystem.cache:remove("bang")
 		end
 	},
-
+	
 	{
 		name = "fireClickDetectors",
 		description = "Fires all the click detectors",
@@ -1092,7 +1128,7 @@ local Commands = {
 			end
 		end
 	},
-
+	
 	{
 		name = "naked",
 		description = "Makes the local character naked",
@@ -1119,7 +1155,7 @@ local Commands = {
 			}, true)
 		end
 	},
-
+	
 	{
 		name = "console",
 		description = "Loads the old Roblox console",
@@ -1130,7 +1166,7 @@ local Commands = {
 			}, true)
 		end
 	},
-
+	
 	{
 		name = "dataLimit",
 		description = "Sets a data-limit (killobytes per second)",
@@ -1145,7 +1181,7 @@ local Commands = {
 			NetworkClient:SetOutgoingKBPSLimit(arguments.kbps)
 		end
 	},
-
+	
 	{
 		name = "blockPurchasePrompts",
 		opposites = {"displayPurchasePrompt"},
@@ -1157,7 +1193,7 @@ local Commands = {
 			CoreGui.PurchasePromptUI.Visible = true
 		end
 	},
-
+	
 	{
 		name = "split",
 		description = "Splits the local character",
@@ -1171,7 +1207,7 @@ local Commands = {
 			end
 		end
 	},
-
+	
 	{
 		name = "friend",
 		description = "Friends the given player(s)",
@@ -1196,7 +1232,7 @@ local Commands = {
 			end
 		end
 	},
-
+	
 	{
 		name = "chat",
 		description = "Chats the given message",
@@ -1242,7 +1278,7 @@ local Commands = {
 			end
 		end,
 	},
-
+	
 	{
 		name = "teleport",
 		description = "Teleports the given player(s) to the destination",
@@ -1272,7 +1308,7 @@ local Commands = {
 			end
 		end,
 	},
-
+	
 	{
 		name = "reduceLag",
 		description = "Reguces lag",
@@ -1285,7 +1321,7 @@ local Commands = {
 				terrain.WaterReflectance = 0
 				terrain.WaterTransparency = 0
 			end
-
+			
 			Lighting.GlobalShadows = 0
 			Lighting.FogEnd = math.huge
 			settings().Rendering.QualityLevel = 1
@@ -1315,7 +1351,7 @@ local Commands = {
 			end
 		end,
 	},
-
+	
 	{
 		name = "annoy",
 		description = "Annoys the given player",
@@ -1334,7 +1370,7 @@ local Commands = {
 					existingAnnoy:Disconnect()
 					commandSystem.cache:remove("annoy")
 				end
-
+				
 				RunService.RenderStepped:Wait()
 				commandSystem.cache:set("annoy", RunService.RenderStepped:Connect(function()
 					if character and character.PrimaryPart and victimCharacter and victimCharacter.PrimaryPart then
@@ -1351,7 +1387,7 @@ local Commands = {
 			end
 		end
 	},
-
+	
 	{
 		name = "animation",
 		description = "Plays the given animation",
@@ -1377,21 +1413,21 @@ local Commands = {
 						existingAnimation:Stop()
 						existingAnimation:Destroy()
 					end
-	
+					
 					local animation = Instance.new("Animation")
 					animation.AnimationId = "rbxassetid://" .. arguments.animationId
 					
 					local animationTrack = humanoid:LoadAnimation(animation)
 					animationTrack:Play(0.1, 1, 1)
 					animationTrack:AdjustSpeed(arguments.speed == 0 and 1 or arguments.speed)
-
+					
 					animationTrack.AncestryChanged:Connect(function(_, parent)
 						if not parent then
 							RunService.RenderStepped:Wait()
 							animation:Destroy()
 						end
 					end)
-
+					
 					commandSystem.cache:set("animation", animationTrack)
 					animationTrack:Play()
 				end
@@ -1401,7 +1437,7 @@ local Commands = {
 			self.cache:remove("annoy")
 		end
 	},
-
+	
 	{
 		name = "completeNoclip",
 		description = "Fully noclips the given player(s)",
@@ -1417,7 +1453,7 @@ local Commands = {
 			if commandSystem.cache:get("completeNoclip") then
 				commandSystem.cache:remove("completeNoclip")
 			end
-
+			
 			local connections = {}
 			for _, target in ipairs(arguments.players) do
 				local character = target.Character
@@ -1425,25 +1461,25 @@ local Commands = {
 					local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
 					local humanoid = character:FindFirstChild("Humanoid")
 					local originalAltitude = humanoidRootPart.CFrame.Y
-
+					
 					if humanoidRootPart and humanoid then
 						RunService.RenderStepped:Wait()
 						commandSystem.cache:set("completeNoclip", true)
-
+						
 						connections[target] = RunService.RenderStepped:Connect(function()
 							if not commandSystem.cache:get("completeNoclip") then
 								return connections[target]:Disconnect()
 							end
-
+							
 							if character and humanoid and humanoidRootPart then
 								local radX, radY, radZ = camera.CFrame:ToOrientation()
-
+								
 								humanoidRootPart.CFrame = CFrame.new(
 									humanoidRootPart.CFrame.X,
 									originalAltitude,
 									humanoidRootPart.CFrame.Z
 								) * CFrame.fromEulerAnglesXYZ(0, radY, radZ)
-
+								
 								humanoid:ChangeState(Enum.HumanoidStateType.StrafingNoPhysics)
 							end
 						end)
@@ -1470,7 +1506,7 @@ local Commands = {
 			if commandSystem.cache:get("noclip") then
 				commandSystem.cache:remove("noclip")
 			end
-
+			
 			local connections = {}
 			for _, target in ipairs(arguments.players) do
 				local character = target.Character
@@ -1478,20 +1514,20 @@ local Commands = {
 					local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
 					local humanoid = character:FindFirstChild("Humanoid")
 					local originalAltitude = humanoidRootPart.CFrame.Y
-
+					
 					if humanoidRootPart and humanoid then
 						RunService.RenderStepped:Wait()
 						commandSystem.cache:set("noclip", true)
-
+						
 						connections[target] = RunService.Stepped:Connect(function()
 							if not commandSystem.cache:get("noclip") then
 								return connections[target]:Disconnect()
 							end
-
+							
 							if character and humanoid and humanoidRootPart then
 								for _, child in ipairs(character:GetDescendants()) do
 									if child:IsA("BasePart") and child.CanCollide then
-						   				child.CanCollide = false
+										child.CanCollide = false
 									end
 								end
 							end
@@ -1520,7 +1556,7 @@ local Commands = {
 			if commandSystem.cache:get("noclipFly") then
 				commandSystem.cache:remove("noclipFly")
 			end
-
+			
 			local connections = {}
 			for _, target in ipairs(arguments.players) do
 				local character = target.Character
@@ -1528,7 +1564,7 @@ local Commands = {
 					local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
 					local humanoid = character:FindFirstChild("Humanoid")
 					local originalAltitude = humanoidRootPart.CFrame.Y
-
+					
 					if humanoidRootPart and humanoid then
 						RunService.RenderStepped:Wait()
 						commandSystem.cache:set("noclipFly", true)
@@ -1563,13 +1599,13 @@ local Commands = {
 								direction.d = 0 
 							end 
 						end) 
-											
+						
 						humanoidRootPart.Anchored = true 
 						humanoid.PlatformStand = true 
 						connections[target].changed = humanoid.Changed:connect(function() 
 							humanoid.PlatformStand = true 
 						end)
-
+						
 						connections[target].renderStepped = RunService.Stepped:Connect(function()
 							if not commandSystem.cache:get("noclipFly") then
 								for _, connection in pairs(connections[target]) do
@@ -1579,12 +1615,12 @@ local Commands = {
 								humanoid.PlatformStand = false
 								return
 							end
-
+							
 							if character and humanoid and humanoidRootPart then
 								character:SetPrimaryPartCFrame(CFrame.new(
 									humanoidRootPart.Position,
 									camera.CFrame.p) * CFrame.Angles(0,math.rad(180),0) * CFrame.new((direction.d - direction.a)*speed, 0, (direction.s - direction.w) * speed
-								))
+									))
 							end
 						end)
 					end
@@ -1629,7 +1665,7 @@ local Commands = {
 			if commandSystem.cache:get("fly") then
 				commandSystem.cache:remove("fly")
 			end
-
+			
 			local connections = {}
 			for _, target in ipairs(arguments.players) do
 				local character = target.Character
@@ -1637,10 +1673,10 @@ local Commands = {
 					local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
 					local humanoid = character:FindFirstChild("Humanoid")
 					local originalAltitude = humanoidRootPart.CFrame.Y
-
+					
 					if humanoidRootPart and humanoid then
 						RunService.RenderStepped:Wait()
-
+						
 						local maxSpeed, magnitude, acceleration, direction, cframe = 100, 5, Vector3.new()
 						local bodyGyro = Instance.new("BodyGyro", humanoidRootPart)
 						bodyGyro.Parent = humanoidRootPart
@@ -1706,7 +1742,7 @@ local Commands = {
 			end
 		end
 	},
-
+	
 	{
 		name = "autoclick",
 		description = "Autoclicks at the given speed",
@@ -1721,10 +1757,10 @@ local Commands = {
 				commandSystem.cache:get("autoClick"):Disconnect()
 				commandSystem.cache:remove("autoClick")
 			end
-
+			
 			if mouse1press and mouse1release then
 				RunService.RenderStepped:Wait()
-			
+				
 				local updateThreshold = 1 / ((arguments.clicksPerSecond or 1) * 2)
 				local mouseDown = false
 				local lastClick = 0
@@ -1769,11 +1805,11 @@ local Commands = {
 								size = handle.Size,
 								gripPos = child.GripPos
 							})
-
+							
 							local selectionBox = Instance.new("SelectionBox", child)
 							selectionBox.Name = "Reach"
 							selectionBox.Adornee = handle
-
+							
 							handle.Size = Vector3.new(0.5, 0.5, arguments.studs == 0 and 10 or arguments.studs)
 							handle.Massless = true
 							child.GripPos = Vector3.new(0, 0, 0)
@@ -1784,14 +1820,14 @@ local Commands = {
 		end,
 		reverseProcess = function(self, arguments, commandSystem)
 			local lastReach = commandSystem.cache:get("lastReach")
-
+			
 			if lastReach and lastReach.tool then
 				local handle = lastReach.tool:FindFirstChild("Handle")
 				lastReach.tool.GripPos = lastReach.gripPos
 				if handle then
 					handle.Size = lastReach.size
 				end
-
+				
 				commandSystem.cache:remove("lastReach")
 			end
 		end
@@ -1818,17 +1854,17 @@ local Commands = {
 						if targetHumanoidRootPart then
 							local originalLocation = character:GetPrimaryPartCFrame()
 							attach(character)
-
+							
 							local connection
 							local lastUpdate = 0
 							connection = RunService.RenderStepped:Connect(function()
 								local deltaTime = tick() - lastUpdate
-
+								
 								if not targetCharacter:FindFirstChild("HumanoidRootPart") then
 									connection:Disconnect()
 									character:SetPrimaryPartCFrame(originalLocation)
 								end
-
+								
 								if deltaTime > 0.1 then
 									character:SetPrimaryPartCFrame(CFrame.new(9e9, workspace.FallenPartsDestroyHeight + 5, 9e9))
 								end
@@ -2040,7 +2076,7 @@ function InputBinder.new()
 		currentInput = {},
 		connections = {},
 	}, InputBinder)
-
+	
 	self.connections.inputBegan = UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		self.currentInput[#self.currentInput+1] = input.KeyCode
 		for _, bind in ipairs(self.inputBinds) do
@@ -2055,7 +2091,7 @@ function InputBinder.new()
 			table.remove(self.currentInput, inputIndex)
 		end
 	end)
-
+	
 	return self
 end
 
@@ -2132,7 +2168,7 @@ function ESP:addCharacter(player, color)
 	if character and not self.container:FindFirstChild(character.Name) then
 		local espHolder = Instance.new("Folder", self.container)
 		espHolder.Name = character.Name
-
+		
 		for _, child in ipairs(character:GetChildren()) do
 			if child:IsA("BasePart") then
 				local indicator = Instance.new("BoxHandleAdornment", espHolder)
@@ -2145,13 +2181,13 @@ function ESP:addCharacter(player, color)
 				indicator.Color3 = color or player.TeamColor.Color
 			end
 		end
-
+		
 		local teamChangeConnection
 		teamChangeConnection = player:GetPropertyChangedSignal("TeamColor"):Connect(function()
 			if not player or not character then
 				return teamChangeConnection:Disconnect()
 			end
-
+			
 			for _, child in ipairs(espHolder and espHolder:GetChildren() or {}) do
 				child.Color3 = color or player.TeamColor.Color
 			end
@@ -2164,7 +2200,7 @@ function ESP:removeCharacter(character)
 	if espHolder then
 		espHolder:Destroy()
 	end
-
+	
 	if self.connections[character] then
 		self.connections[character]:Disconnect()
 		self.connections[character] = nil
@@ -2440,12 +2476,12 @@ function MouseHover:addElement(uiElement, hoverText, validationCallback)
 	validationCallback = validationCallback or function(...)
 		return true
 	end
-
+	
 	self.connections[uiElement] = {
 		mouseEnter = uiElement.MouseEnter:Connect(function()
 			uiElement.MouseMoved:Connect(function(mouseX, mouseY)
 				if validationCallback(mouseX, mouseY) then
-						self.label.Text = hoverText or uiElement.Hover.Value
+					self.label.Text = hoverText or uiElement.Hover.Value
 					
 					self.label.TextScaled = not self.label.TextScaled -- again, fix roblox bug :\
 					self.label.TextScaled = not self.label.TextScaled
@@ -2477,7 +2513,7 @@ function MouseHover:addElement(uiElement, hoverText, validationCallback)
 				end
 			end)
 		end),
-
+		
 		mouseLeave = uiElement.MouseLeave:Connect(function()
 			self.label.Text = ""
 			self.container.Size = UDim2.new(0, 0, 0, 0)
@@ -2558,9 +2594,9 @@ function MouseHover.new(handler)
 		padding = 7.5,
 		connections = {}
 	}, MouseHover)
-
+	
 	self:init()
-
+	
 	return self
 end
 
@@ -2764,7 +2800,7 @@ function Notification:display()
 			existingNotification.container:TweenPosition(UDim2.new(
 				1, -15,
 				0, existingNotification.container.AbsolutePosition.Y + existingNotification.container.AbsoluteSize.Y - existingNotification.container.AbsoluteSize.Y - 15
-			), "In", "Quint", 0.25)
+				), "In", "Quint", 0.25)
 		end
 	end
 	
@@ -2775,21 +2811,21 @@ function Notification:display()
 		self.container:TweenPosition(UDim2.new(
 			1, self.container.AbsoluteSize.X * 2 + 15,
 			0, self.container.AbsolutePosition.Y + self.container.AbsoluteSize.Y
-		), "In", "Quint", 0.25, true, function(status)
-			if status == Enum.TweenStatus.Completed then
-				self.container:Destroy()
-			end
-		end)
-
+			), "In", "Quint", 0.25, true, function(status)
+				if status == Enum.TweenStatus.Completed then
+					self.container:Destroy()
+				end
+			end)
+		
 		for _, existingNotification in pairs(self.handler.notifications) do
 			if existingNotification.container.Parent and existingNotification.container ~= self.container and existingNotification.container.AbsolutePosition.Y < self.container.AbsolutePosition.Y then
 				existingNotification.container:TweenPosition(UDim2.new(
 					1, -15,
 					0, existingNotification.container.AbsolutePosition.Y + existingNotification.container.AbsoluteSize.Y + self.container.AbsoluteSize.Y + 15
-				), "In", "Quint", 0.25)
+					), "In", "Quint", 0.25)
 			end
 		end
-
+		
 		wait(0.1)
 		if clicked and not closing then
 			self._clicked:Fire()
@@ -2845,7 +2881,7 @@ function Notification:build()
 	local bodyText = Instance.new("TextLabel", body)
 	local controls = Instance.new("Frame", header)
 	local controlsLayout = Instance.new("UIListLayout", controls)
-
+	
 	container.Name = self.name or "Notitication"
 	container.BackgroundTransparency = 1
 	container.AnchorPoint = Vector2.new(1, 1)
@@ -2859,10 +2895,10 @@ function Notification:build()
 	notification.BackgroundTransparency = 0.025
 	self.handler.themeSyncer:bindElement(notification, "BackgroundColor3", "background")
 	self.handler.themeSyncer:bindElement(notification, "BackgroundTransparency", "transparency")
-
+	
 	uiCorner.Name = "Corner"
 	self.handler.themeSyncer:bindElement(uiCorner, "CornerRadius", "roundness")
-
+	
 	shadow.Name = "Shadow"
 	shadow.Image = "rbxassetid://1113384364"
 	shadow.ScaleType = Enum.ScaleType.Slice
@@ -2873,22 +2909,22 @@ function Notification:build()
 	shadow.BackgroundTransparency = 1
 	shadow.ImageTransparency = 0.75
 	self.handler.themeSyncer:bindElement(shadow, "Visible", "shadow")
-
+	
 	body.Name = "Body"
 	body.Size = UDim2.new(1, 0, 1, -25)
 	body.Position = UDim2.new(0, 0, 0, 25)
 	body.BackgroundTransparency = 1
 	body.ClipsDescendants = true
-
+	
 	header.Name = "Header"
 	header.Size = UDim2.new(1, 0, 0, 25)
 	header.BorderSizePixel = 0
 	self.handler.themeSyncer:bindElement(header, "BackgroundColor3", "headerBackground")
 	self.handler.themeSyncer:bindElement(header, "BackgroundTransparency", "transparency")
-
+	
 	headerCorner.Name = "Corner"
 	self.handler.themeSyncer:bindElement(headerCorner, "CornerRadius", "roundness")
-
+	
 	title.Name = "Title"
 	title.Size = UDim2.new(1, -10, 1, -10)
 	title.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -2911,19 +2947,19 @@ function Notification:build()
 	bodyText.TextYAlignment = Enum.TextYAlignment.Top
 	bodyText.Text = self.text or "Hello there!"
 	self.handler.themeSyncer:bindElement(bodyText, "TextColor3", "text")
-
+	
 	controls.Name = "Controls"
 	controls.Size = UDim2.new(1, -10, 1, -2)
 	controls.Position = UDim2.new(0.5, 0, 0.5, 0)
 	controls.AnchorPoint = Vector2.new(0.5, 0.5)
 	controls.BackgroundTransparency = 1
-
+	
 	controlsLayout.Name = "ListLayout"
 	controlsLayout.Padding = UDim.new(0, 5)
 	controlsLayout.FillDirection = Enum.FillDirection.Horizontal
 	controlsLayout.SortOrder = Enum.SortOrder.Name
 	controlsLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-
+	
 	local closeButton = Instance.new("TextButton", controls)
 	local closeCorner = Instance.new("UICorner", closeButton)
 	
@@ -2931,7 +2967,7 @@ function Notification:build()
 	closeButton.Size = UDim2.new(0, 15, 0, 15)
 	closeButton.BackgroundColor3 = Color3.fromRGB(252, 87, 83)
 	closeButton.Text = ""
-
+	
 	self.handler.themeSyncer:bindElement(closeCorner, "CornerRadius", "controlRoundness")
 	
 	controlsLayout:GetPropertyChangedSignal("HorizontalAlignment"):Connect(function()
@@ -2939,7 +2975,7 @@ function Notification:build()
 		closeButton.Name = isRight and "3" or "1"
 	end)
 	self.handler.themeSyncer:bindElement(controlsLayout, "HorizontalAlignment", "controlAlignment")
-
+	
 	local toAdd = {
 		container = container,
 		notification = notification,
@@ -2957,11 +2993,11 @@ function Notification:build()
 			close = closeButton,
 		},
 	}
-
+	
 	for name, object in pairs(toAdd) do
 		self[name] = object
 	end
-
+	
 	return notification
 end
 
@@ -3007,7 +3043,7 @@ end
 
 function Window:minimize()
 	self:addTraceback()
-
+	
 	TweenService:Create(self.container, TweenInfo.new(0.25, Enum.EasingStyle.Exponential), {
 		AnchorPoint = Vector2.new(0.5, 1),
 		Position = UDim2.new(0.5, 0, 1, 0),
@@ -3037,7 +3073,7 @@ end
 
 function Window:close()
 	self:addTraceback()
-
+	
 	local offset = 25
 	local tween = TweenService:Create(self.container, TweenInfo.new(0.1), {
 		Position = UDim2.new(
@@ -3049,7 +3085,7 @@ function Window:close()
 			0, self.lastState.size.Y.Offset - offset
 		)
 	})
-
+	
 	tween.Completed:Connect(function()
 		self:destroy()
 		self.handler.dock:remove(self.name)
@@ -3063,7 +3099,7 @@ function Window:open()
 		Size = self.lastState.size,
 		AnchorPoint = self.lastState.anchorPoint
 	})
-
+	
 	tween:Play()
 	
 	delay(0.1, function()
@@ -3105,18 +3141,18 @@ function Window:runOverlapping()
 		if not input or table.find(acceptedInputs, input.UserInputType) then
 			if not input or self:isOnTop(input.Position.X, input.Position.Y) then
 				local highestZIndex = self.container.ZIndex
-
+				
 				for _, window in ipairs(self.handler.windows) do
 					if window.container ~= self.container then
 						highestZIndex = math.max(highestZIndex, window.container.ZIndex)
 					end
 				end
-
+				
 				self.container.ZIndex = highestZIndex + 1
 			end
 		end
 	end
-
+	
 	self.container.InputBegan:Connect(editOverlap)
 	self.header.InputBegan:Connect(editOverlap)
 	editOverlap()
@@ -3137,23 +3173,23 @@ function Window:allocateSpace(size, maxCycles)
 		end
 		return false
 	end
-
+	
 	local cycleIndex = 0
 	while cycleIndex <= maxCycles and isTaken(position) do
 		local updatedPosition = position + incrementDelta
 		local endPosition = updatedPosition + size
-
+		
 		updatedPosition = Vector2.new(
 			updatedPosition.X % camera.ViewportSize.X,
 			updatedPosition.Y % camera.ViewportSize.Y
 		)
-
+		
 		--[[if endPosition.X > camera.ViewportSize.X then
 			updatedPosition = Vector2.new(0, updatedPosition.Y)
 		elseif endPosition.Y > camera.ViewportSize.Y then
 			updatedPosition = Vector2.new(updatedPosition.X, 0)
 		end]]
-
+		
 		position = updatedPosition
 		cycleIndex = cycleIndex + 1
 	end
@@ -3184,7 +3220,7 @@ function Window:runDragging()
 			self.container.Position = position
 		end
 	end
-
+	
 	self.header.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 			dragging = true
@@ -3197,13 +3233,13 @@ function Window:runDragging()
 			end)
 		end
 	end)
-
+	
 	self.header.InputChanged:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
 			dragInput = input
 		end
 	end)
-
+	
 	UserInputService.InputChanged:Connect(function(input)
 		if input == dragInput and dragging then
 			update(input)
@@ -3269,7 +3305,7 @@ function Window:build(size, position)
 	local title = Instance.new("TextLabel", header)
 	local controls = Instance.new("Frame", header)
 	local controlsLayout = Instance.new("UIListLayout", controls)
-
+	
 	container.Name = self.name or "Window"
 	container.BackgroundTransparency = 1
 	container.Size = size or UDim2.new(0, 400, 0, 250)
@@ -3277,17 +3313,17 @@ function Window:build(size, position)
 		0, (camera.ViewportSize.X - container.AbsoluteSize.X) / 2,
 		0, (camera.ViewportSize.Y - container.AbsoluteSize.Y) / 2
 	)
-
+	
 	window.Name = "Content"
 	window.ZIndex = 2
 	window.Size = UDim2.new(1, 0, 1, 0)
 	window.BackgroundTransparency = 0.025
 	self.handler.themeSyncer:bindElement(window, "BackgroundColor3", "background")
 	self.handler.themeSyncer:bindElement(window, "BackgroundTransparency", "transparency")
-
+	
 	uiCorner.Name = "Corner"
 	self.handler.themeSyncer:bindElement(uiCorner, "CornerRadius", "roundness")
-
+	
 	shadow.Name = "Shadow"
 	shadow.Image = "rbxassetid://1113384364"
 	shadow.ScaleType = Enum.ScaleType.Slice
@@ -3298,22 +3334,22 @@ function Window:build(size, position)
 	shadow.BackgroundTransparency = 1
 	shadow.ImageTransparency = 0.75
 	self.handler.themeSyncer:bindElement(shadow, "Visible", "shadow")
-
+	
 	body.Name = "Body"
 	body.Size = UDim2.new(1, 0, 1, -25)
 	body.Position = UDim2.new(0, 0, 0, 25)
 	body.BackgroundTransparency = 1
 	body.ClipsDescendants = true
-
+	
 	header.Name = "Header"
 	header.Size = UDim2.new(1, 0, 0, 25)
 	header.BorderSizePixel = 0
 	self.handler.themeSyncer:bindElement(header, "BackgroundColor3", "headerBackground")
 	self.handler.themeSyncer:bindElement(header, "BackgroundTransparency", "transparency")
-
+	
 	headerCorner.Name = "Corner"
 	self.handler.themeSyncer:bindElement(headerCorner, "CornerRadius", "roundness")
-
+	
 	resizeButton.Name = "ResizeButton"
 	resizeButton.Position = UDim2.new(1, -10, 1, -10)
 	resizeButton.Size = UDim2.new(0, 10+5, 0, 10+5)
@@ -3325,7 +3361,7 @@ function Window:build(size, position)
 	resizeButton.MouseLeave:Connect(function()
 		mouse.Icon = ""
 	end)
-
+	
 	title.Name = "Title"
 	title.Size = UDim2.new(1, -10, 1, -10)
 	title.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -3336,19 +3372,19 @@ function Window:build(size, position)
 	title.TextXAlignment = Enum.TextXAlignment.Center
 	title.Text = self.name or "Untitled Window"
 	self.handler.themeSyncer:bindElement(title, "TextColor3", "text")
-
+	
 	controls.Name = "Controls"
 	controls.Size = UDim2.new(1, -10, 1, -2)
 	controls.Position = UDim2.new(0.5, 0, 0.5, 0)
 	controls.AnchorPoint = Vector2.new(0.5, 0.5)
 	controls.BackgroundTransparency = 1
-
+	
 	controlsLayout.Name = "ListLayout"
 	controlsLayout.Padding = UDim.new(0, 5)
 	controlsLayout.FillDirection = Enum.FillDirection.Horizontal
 	controlsLayout.SortOrder = Enum.SortOrder.Name
 	controlsLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-
+	
 	--[[local closeButton = Instance.new("TextButton", controls)
 	local closeIcon = Instance.new("ImageLabel", closeButton)
 
@@ -3384,30 +3420,30 @@ function Window:build(size, position)
 	local closeButton = Instance.new("TextButton", controls)
 	local minimizeButton = Instance.new("TextButton", controls)
 	local maximizeButton = Instance.new("TextButton", controls)
-
+	
 	local closeCorner = Instance.new("UICorner", closeButton)
 	local minimizeCorner = Instance.new("UICorner", minimizeButton)
 	local maximizeCorner = Instance.new("UICorner", maximizeButton)
-
+	
 	closeButton.Name = "1"
 	closeButton.Size = UDim2.new(0, 15, 0, 15)
 	closeButton.BackgroundColor3 = Color3.fromRGB(252, 87, 83)
 	closeButton.Text = ""
-
+	
 	minimizeButton.Name = "2"
 	minimizeButton.Size = UDim2.new(0, 15, 0, 15)
 	minimizeButton.BackgroundColor3 = Color3.fromRGB(253, 188, 64)
 	minimizeButton.Text = ""
-
+	
 	maximizeButton.Name = "3"
 	maximizeButton.Size = UDim2.new(0, 15, 0, 15)
 	maximizeButton.BackgroundColor3 = Color3.fromRGB(51, 199, 72)
 	maximizeButton.Text = ""
-
+	
 	self.handler.themeSyncer:bindElement(closeCorner, "CornerRadius", "controlRoundness")
 	self.handler.themeSyncer:bindElement(minimizeCorner, "CornerRadius", "controlRoundness")
 	self.handler.themeSyncer:bindElement(maximizeCorner, "CornerRadius", "controlRoundness")
-
+	
 	controlsLayout:GetPropertyChangedSignal("HorizontalAlignment"):Connect(function()
 		local isRight = controlsLayout.HorizontalAlignment == Enum.HorizontalAlignment.Right
 		closeButton.Name = isRight and "3" or "1"
@@ -3415,7 +3451,7 @@ function Window:build(size, position)
 		maximizeButton.Name = isRight and "1" or "3"
 	end)
 	self.handler.themeSyncer:bindElement(controlsLayout, "HorizontalAlignment", "controlAlignment")
-
+	
 	local toAdd = {
 		container = container,
 		window = window,
@@ -3439,23 +3475,23 @@ function Window:build(size, position)
 			position = window.Position
 		}
 	}
-
+	
 	for name, object in pairs(toAdd) do
 		self[name] = object
 	end
-
+	
 	return window
 end
 
 function Window:add(originalClass, data)
 	local class = originalClass
-
+	
 	--[[if class == "TextLabel" then
 		class = "TextBox"
 	end]]
-
+	
 	local object = Instance.new(class, self.body)
-
+	
 	if typeof(data) == "table" then
 		for property, value in pairs(data) do
 			object[property] = value
@@ -3463,12 +3499,12 @@ function Window:add(originalClass, data)
 	elseif typeof(data) == "Instance" then
 		object.Parent = data
 	end
-
+	
 	--[[if originalClass == "TextLabel" then
 		object.ClearTextOnFocus = false
 		object.TextEditable = false
 	end]]
-
+	
 	return object
 end
 
@@ -3477,11 +3513,11 @@ function Window:init(size)
 		self:build(size)
 		self:allocateSpace()
 		self:runOverlapping()
-
+		
 		self.buttons.close.MouseButton1Click:Connect(function()
 			self:close()
 		end)
-
+		
 		self.buttons.minimize.MouseButton1Click:Connect(function()
 			self:minimize()
 		end)
@@ -3490,11 +3526,11 @@ function Window:init(size)
 			self:maximize()
 		end)
 	end
-
+	
 	if self.runDragging then
 		self:runDragging()
 	end
-
+	
 	if self.runResizing then
 		self:runResizing()
 	end
@@ -3509,9 +3545,9 @@ function Window.new(handler, name, size)
 		resizable = true,
 		maximized = false,
 	}, Window)
-
+	
 	self:init(size)
-
+	
 	return self
 end
 
@@ -3523,17 +3559,17 @@ function Dock:add(name, clickCallback)
 	local element = Instance.new("TextButton", self.dock)
 	local corner = Instance.new("UICorner", element)
 	local textLabel = Instance.new("TextLabel", element)
-
+	
 	element.Name = name
 	element.Size = UDim2.new(0, 200, 1, 0)
 	element.BorderSizePixel = 0
 	element.Text = ""
 	self.handler.themeSyncer:bindElement(element, "BackgroundColor3", "background")
 	self.handler.themeSyncer:bindElement(element, "BackgroundTransparency", "transparency")
-
+	
 	corner.Name = "Corner"
 	self.handler.themeSyncer:bindElement(corner, "CornerRadius", "roundness")
-
+	
 	textLabel.Name = "Content"
 	textLabel.Size = UDim2.new(1, -10, 0.5, -10)
 	textLabel.Position = UDim2.new(0.5, 0, 0.25, 0)
@@ -3544,7 +3580,7 @@ function Dock:add(name, clickCallback)
 	textLabel.TextXAlignment = Enum.TextXAlignment.Left
 	textLabel.Font = Enum.Font.Gotham
 	self.handler.themeSyncer:bindElement(textLabel, "TextColor3", "text")
-
+	
 	local clickConnection = element.MouseButton1Click:Connect(function()
 		if self.elements[name] then
 			for _, callback in ipairs(self.elements[name].callbacks or {}) do
@@ -3552,7 +3588,7 @@ function Dock:add(name, clickCallback)
 			end
 		end
 	end)
-
+	
 	local toAdd = {
 		button = element,
 		corner = corner,
@@ -3560,7 +3596,7 @@ function Dock:add(name, clickCallback)
 		callbacks = {clickCallback},
 		clickConnection = clickConnection
 	}
-
+	
 	self.elements[name] = toAdd
 	return self.elements[name]
 end
@@ -3570,7 +3606,7 @@ function Dock:remove(name)
 		local closeTween = TweenService:Create(self.elements[name].button, TweenInfo.new(0.5), {
 			Size = UDim2.new(0,self.elements[name].button.AbsoluteSize.X, 0, 0)
 		})
-
+		
 		closeTween.Completed:Connect(function()
 			self.elements[name].button:Destroy()
 			if self.elements[name].clickConnection then
@@ -3578,7 +3614,7 @@ function Dock:remove(name)
 			end
 			self.elements[name] = nil
 		end)
-
+		
 		closeTween:Play()
 	end
 end
@@ -3593,29 +3629,29 @@ end
 function Dock:build()
 	local dock = Instance.new("Frame", self.handler.gui)
 	local dockLayout = Instance.new("UIListLayout", dock)
-
+	
 	dock.Name = "Dock"
 	dock.Position = UDim2.new(0.5, 0, 1, 0)
 	dock.Size = UDim2.new(1, 0, 0, (self.size or 25) * 2)
 	dock.AnchorPoint = Vector2.new(0.5, 0.5)
 	dock.BackgroundTransparency = 1
-
+	
 	dockLayout.Name = "Layout"
 	dockLayout.Padding = UDim.new(0, 10)
 	dockLayout.FillDirection = Enum.FillDirection.Horizontal
 	dockLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 	dockLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	dockLayout.SortOrder = Enum.SortOrder.LayoutOrder
-
+	
 	local toAdd = {
 		dock = dock,
 		dockLayout = dockLayout
 	}
-
+	
 	for name, object in pairs(toAdd) do
 		self[name] = object
 	end
-
+	
 	return dock
 end
 
@@ -3648,9 +3684,9 @@ function Dock.new(handler)
 		dynamic = not TERMINAL_MODE,
 		elements = {}
 	}, Dock)
-
+	
 	self:init()
-
+	
 	return self
 end
 
@@ -3671,15 +3707,15 @@ function Terminal:connectBoundsUpdate(object, callback)
 		callback(object, ...)
 		self:updateSize()
 	end
-
+	
 	object:GetPropertyChangedSignal("Text"):Connect(callbackProxy)
 	object:GetPropertyChangedSignal("TextSize"):Connect(callbackProxy)
-
+	
 	if AUTO_TEXT_RESIZE then
 		--self.content:GetPropertyChangedSignal("AbsoluteSize"):Connect(callbackProxy)
 		self.content:GetPropertyChangedSignal("CanvasSize"):Connect(callbackProxy)
 	end
-
+	
 	callbackProxy()
 end
 
@@ -3699,13 +3735,13 @@ function Terminal:addText(text, color, isPrompt)
 	if not text then
 		return
 	end
-
+	
 	local textLabel = self.window:add("TextLabel", self.content)
-
+	
 	if typeof(text) == "string" and script then
 		text = text:gsub(script:GetFullName(), "rCMD")
 	end
-
+	
 	textLabel.Name = #self.content:GetChildren()
 	textLabel.Text = text
 	textLabel.TextSize = self.textSize or 16
@@ -3715,17 +3751,17 @@ function Terminal:addText(text, color, isPrompt)
 	textLabel.TextYAlignment = Enum.TextYAlignment.Top
 	textLabel.BackgroundTransparency = 1
 	self.handler.themeSyncer:bindElement(textLabel, "TextColor3", isPrompt and "boxPrefix" or "text")
-
+	
 	self:connectBoundsUpdate(textLabel, function()
 		local bounds = self:getBounds(textLabel, textLabel.Text)
 		textLabel.Size = UDim2.new(1, -self.content.ScrollBarThickness, 0, bounds.Y)
 		textLabel.TextScaled = not textLabel.TextScaled
 		textLabel.TextScaled = not textLabel.TextScaled
 	end)
-
+	
 	if isPrompt then
 		local textBox = self.window:add("TextBox", textLabel)
-
+		
 		textBox.Name = #self.content:GetChildren()
 		textBox.Text = ""
 		textBox.PlaceholderText = "Enter command here"
@@ -3738,14 +3774,14 @@ function Terminal:addText(text, color, isPrompt)
 		textBox.BackgroundTransparency = 1
 		textBox.ClearTextOnFocus = false
 		self.handler.themeSyncer:bindElement(textBox, "TextColor3", "textBox")
-
+		
 		self:connectBoundsUpdate(textBox, function()
 			local bounds = self:getBounds(textBox, textBox.Text)
 			textLabel.Size = UDim2.new(1, -self.content.ScrollBarThickness, 0, bounds.Y)
 		end)
 		return textLabel, textBox
 	end
-
+	
 	return textLabel
 end
 
@@ -3756,10 +3792,10 @@ function Terminal:addPrompt(givenPrefix, callback)
 	end
 	
 	local label, box = self:addText(prefix, nil, true)
-
+	
 	local focused = false
 	local inputConnections = {}
-
+	
 	callback = callback or self.defaultCallback
 	local function callbackProxy()
 		box.TextEditable = false
@@ -3771,7 +3807,7 @@ function Terminal:addPrompt(givenPrefix, callback)
 			self:addText(("Unable to handle input: %s"):format(response))
 		end
 	end
-
+	
 	local inputs = {Enum.KeyCode.Return, Enum.KeyCode.ButtonA}
 	inputConnections.focused = box.Focused:Connect(function()
 		focused = true
@@ -3788,7 +3824,7 @@ function Terminal:addPrompt(givenPrefix, callback)
 	inputConnections.onScreenKeyboard = box.ReturnPressedFromOnScreenKeyboard:Connect(function()
 		callbackProxy()
 	end)
-
+	
 	if box.AbsolutePosition.Y > self.content.AbsolutePosition.Y + self.content.AbsoluteSize.Y then
 		self.content.CanvasPosition = Vector2.new(
 			0,
@@ -3805,7 +3841,7 @@ function Terminal:build()
 	local window = self.handler:addWindow("Terminal")
 	local content = window:add("ScrollingFrame")
 	local contentLayout = window:add("UIListLayout", content)
-
+	
 	content.Name = "Content"
 	content.Size = UDim2.new(1, -10, 1, -10)
 	content.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -3814,19 +3850,19 @@ function Terminal:build()
 	content.BorderSizePixel = 0
 	content.ScrollBarThickness = 5
 	content.ScrollBarImageTransparency = 0.5
-
+	
 	contentLayout.Name = "Layout"
 	contentLayout.Padding = UDim.new(0, 5)
 	contentLayout.VerticalAlignment = Enum.VerticalAlignment.Top	
 	contentLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
-
+	
 	local toAdd = {
 		window = window,
 		content = content,
 		contentLayout = contentLayout
 	}
-
+	
 	for name, object in pairs(toAdd) do
 		self[name] = object
 	end
@@ -3836,7 +3872,7 @@ function Terminal:init()
 	if not self.window then
 		self:build()
 	end
-
+	
 	self:addText(("rCMD [%s] - level %d\n(c) 2020 SenselessDemon. All rights reserved."):format(VERSION, getIdentity()))
 	self:addPrompt()
 end
@@ -3847,7 +3883,7 @@ function Terminal.new(handler, defaultCallback)
 		inputBinder = InputBinder.new(),
 		textSize = 15
 	}, Terminal)
-
+	
 	self.inputBinder:bind({Enum.KeyCode.LeftControl, Enum.KeyCode.Equals}, function()
 		if self.content then
 			for _, descendant in ipairs(self.content:GetDescendants()) do
@@ -3866,12 +3902,12 @@ function Terminal.new(handler, defaultCallback)
 			end
 		end
 	end)
-
+	
 	self.defaultCallback = defaultCallback or function(entry)
 		self:addPrompt()
 	end
 	self:init()
-
+	
 	return self
 end
 
@@ -3892,15 +3928,15 @@ function List:connectBoundsUpdate(object, callback)
 		callback(object, ...)
 		self:updateSize()
 	end
-
+	
 	object:GetPropertyChangedSignal("Text"):Connect(callbackProxy)
 	object:GetPropertyChangedSignal("TextSize"):Connect(callbackProxy)
-
+	
 	if AUTO_TEXT_RESIZE then
 		self.content:GetPropertyChangedSignal("AbsoluteSize"):Connect(callbackProxy)
 		self.content:GetPropertyChangedSignal("CanvasSize"):Connect(callbackProxy)
 	end
-
+	
 	callbackProxy()
 end
 
@@ -3920,7 +3956,7 @@ function List:addItem(text, onHover)
 	if not text then
 		return
 	end
-
+	
 	local textLabel = self.window:add("TextLabel", self.content)
 	textLabel.Name = #self.content:GetChildren()
 	textLabel.Text = text
@@ -3932,7 +3968,7 @@ function List:addItem(text, onHover)
 	textLabel.BackgroundTransparency = 1
 	textLabel.TextTransparency = 1
 	self.handler.themeSyncer:bindElement(textLabel, "TextColor3", "text")
-
+	
 	self:connectBoundsUpdate(textLabel, function()
 		local bounds = self:getBounds(textLabel, textLabel.Text)
 		textLabel.Size = UDim2.new(1, -self.content.ScrollBarThickness, 0, bounds.Y)
@@ -3953,7 +3989,7 @@ function List:addItem(text, onHover)
 	TweenService:Create(textLabel, TweenInfo.new(0.5), {
 		TextTransparency = 0
 	}):Play()
-
+	
 	return textLabel
 end
 
@@ -3973,19 +4009,19 @@ function List:build(size)
 	content.BorderSizePixel = 0
 	content.ScrollBarThickness = 5
 	content.ScrollBarImageTransparency = 0.5
-
+	
 	contentLayout.Name = "Layout"
 	contentLayout.Padding = UDim.new(0, 5)
 	contentLayout.VerticalAlignment = Enum.VerticalAlignment.Top	
 	contentLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
-
+	
 	local toAdd = {
 		window = window,
 		content = content,
 		contentLayout = contentLayout
 	}
-
+	
 	for name, object in pairs(toAdd) do
 		self[name] = object
 	end
@@ -4089,7 +4125,7 @@ function WindowHandler.new(parent, theme)
 	if not self.dock then
 		self.dock = Dock.new(self)
 	end
-
+	
 	return self
 end
 
@@ -4101,7 +4137,7 @@ function Task:run(...)
 	local function run(...)
 		self.alive = true
 		local response = {pcall(self.process, ...)}
-
+		
 		local success = response[1]
 		local result = {select(2, unpack(response))}
 		
@@ -4111,11 +4147,11 @@ function Task:run(...)
 			return unpack(result)
 		end
 	end
-
+	
 	if self.thread then
 		run = coroutine.wrap(run)
 	end
-
+	
 	return run(...)
 end
 
@@ -4137,7 +4173,7 @@ function Task.new(process, errorHandler)
 			-- something
 		end
 	}, Task)
-
+	
 	self.environmentProxy = setmetatable({}, {
 		__index = function(_, index)
 			if self.alive then
@@ -4146,7 +4182,7 @@ function Task.new(process, errorHandler)
 				return self.killFunction()
 			end
 		end,
-
+		
 		__newindex = function(_, index, value)
 			if self.alive then
 				self.environment[index] = value
@@ -4182,7 +4218,7 @@ function Sandbox.new(environment)
 		tasks = {},
 		environment = environment or {}
 	}, Sandbox)
-
+	
 	return self
 end
 
@@ -4192,22 +4228,27 @@ Logger.__index = Logger
 
 function Logger:log(type, ...)
 	if self.options[type] then
+		self._logAdded:Fire(type, ...)
 		self.logs[type][#self.logs[type]+1] = {tick(), ...}
 	end
 end
 
+function Logger:addConnection(connection)
+	self.connections[#self.connections+1] = connection
+end
+
 function Logger:init()
-	self.connetions.join = Players.PlayerAdded:Connect(function(player)
+	self:addConnection(Players.PlayerAdded:Connect(function(player)
 		self:log("join", player)
 		
-		player.Chatted:Connect(function(message)
+		self:addConnection(player.Chatted:Connect(function(message)
 			self:log("chat", player, message)
-		end)
-	end)
+		end))
+	end))
 	
-	self.connetions.leave = Players.Playerremoving:Connect(function(player)
+	self:addConnection(Players.PlayerRemoving:Connect(function(player)
 		self:log("leave", player)
-	end)
+	end))
 end
 
 function Logger.new(options)
@@ -4222,9 +4263,11 @@ function Logger.new(options)
 			chat = true,
 			join = true,
 			leave = true
-		}
+		},
+		_logAdded = Instance.new("BindableEvent")
 	}, Logger)
 	
+	self.logAdded = self._logAdded.Event
 	self:init()
 	
 	return self
@@ -4240,11 +4283,11 @@ end
 
 function Parser:reconstructArguments(arguments, index)
 	local segments = {}
-
+	
 	for index, argument in ipairs(arguments) do
 		segments[index] = argument.raw
 	end
-
+	
 	segments = {select(index or 1, unpack(segments))}
 	return table.concat(segments, self.options.splitKey)
 end
@@ -4254,13 +4297,13 @@ function Parser:parse(data, requiresPrefix)
 		raw = data,
 		batches = {}
 	}
-
+	
 	if data:sub(1, 3) == "/e " then
 		data = data:sub(4)
 	end
 	
 	data = data:gsub("\n", ""):gsub("\t", "")
-
+	
 	for batchIndex, rawBatch in ipairs(data:split(self.options.batchKey)) do
 		rawBatch = self:trim(rawBatch)
 		if rawBatch:sub(1, #self.options.prefix) == self.options.prefix then
@@ -4270,19 +4313,19 @@ function Parser:parse(data, requiresPrefix)
 				continue
 			end
 		end
-
+		
 		local batch = {
 			raw = rawBatch,
 			command = nil,
 			arguments = {},
 			coreArguments = {}
 		}
-
+		
 		local batchElements = batch.raw:split(self.options.splitKey)
-
+		
 		local command = self:trim(batchElements[1])
 		local arguments = {select(2, unpack(batchElements))}
-
+		
 		for argumentIndex, rawArgument in ipairs(arguments) do
 			if rawArgument:sub(1, #self.options.coreArgumentPrefix) == self.options.coreArgumentPrefix then
 				batch.coreArguments[#batch.coreArguments+1] = rawArgument:sub(#self.options.coreArgumentPrefix+1)
@@ -4291,7 +4334,7 @@ function Parser:parse(data, requiresPrefix)
 					raw = rawArgument,
 					segments = {}
 				}
-
+				
 				rawArgument = self:trim(rawArgument)
 				local segments = rawArgument:split(self.options.argumentSplitKey)
 				for segmentIndex, rawSegment in ipairs(segments) do
@@ -4300,20 +4343,20 @@ function Parser:parse(data, requiresPrefix)
 						call = nil,
 						parameter = nil,
 					}
-
+					
 					rawSegment = self:trim(rawSegment)
 					segment.call, segment.parameter = unpack(segment.raw:split(self.options.argumentParameterKey))
 					argument.segments[segmentIndex] = segment
 				end
-
+				
 				batch.arguments[#batch.arguments+1] = argument
 			end
 		end
-
+		
 		batch.command = command
 		tree.batches[batchIndex] = batch
 	end
-
+	
 	return tree
 end
 
@@ -4328,7 +4371,7 @@ function Parser.new(options)
 			argumentParameterKey = "-"
 		}
 	}, Parser)
-
+	
 	return self
 end
 
@@ -4376,7 +4419,7 @@ end
 
 function CommandSystem:getTargets(argument, command)
 	local targets = {}
-
+	
 	if argument.raw == "" then
 		targets = {localPlayer}
 	end
@@ -4399,7 +4442,7 @@ function CommandSystem:getTargets(argument, command)
 				end
 			end
 		end
-
+		
 		if not callFound then
 			for _, player in ipairs(Players:GetPlayers()) do
 				if player.Name:sub(1, #segment.call):lower() == segment.call:lower() then
@@ -4408,7 +4451,7 @@ function CommandSystem:getTargets(argument, command)
 			end
 		end
 	end
-
+	
 	for index, target in ipairs(targets) do
 		if typeof(target) ~= "Instance" or not target:IsA("Player") then
 			table.remove(targets, index)
@@ -4430,7 +4473,7 @@ function CommandSystem:parseArguments(command, arguments, coreArguments)
 				type = typeof(index) == "string" and argument or "raw"
 			}
 		end
-
+		
 		for _, argumentType in ipairs(self.argumentTypes) do
 			for _, call in ipairs(argumentType.calls or {}) do
 				if argument.type:lower() == call:lower() then
@@ -4438,20 +4481,20 @@ function CommandSystem:parseArguments(command, arguments, coreArguments)
 					if index == #command.arguments and argumentType.expandable then
 						givenArgument.raw = self.parser:reconstructArguments(arguments, index)
 					end
-
+					
 					local success, response = pcall(argumentType.process, givenArgument, self)
-
+					
 					if success then
 						givenArgument = response
 					end
 					finalArguments[argument.name] = givenArgument
-
+					
 					break
 				end
 			end
 		end
 	end
-
+	
 	for _, coreArgument in ipairs(coreArguments or {}) do
 		finalArguments.core[coreArgument] = true
 	end
@@ -4463,13 +4506,13 @@ function CommandSystem:findCommand(call)
 	local function validateCall(string1, string2)
 		return string1:lower() == (string2 or call):lower()
 	end
-
+	
 	local responseType = "process"
 	if call:sub(1, 2):lower() == "un" then
 		call = call:sub(3)
 		responseType = "reverseProcess"
 	end
-
+	
 	for _, command in ipairs(self.commands or {}) do
 		if validateCall(command.name) then
 			return command, responseType
@@ -4492,7 +4535,7 @@ function CommandSystem:executeCommand(command, processType, arguments, isNested)
 	if command.requiresTool and not getTool() then
 		return self:error("You must have a tool to use this command", true)
 	end
-
+	
 	local task = Task.new(command[processType])
 	task.yields = true
 	task.thread = false
@@ -4548,7 +4591,7 @@ function CommandSystem:executeTree(tree)
 						unpack(self.parser:reconstructArguments(
 							batch.arguments,
 							2
-						))
+							))
 					)
 				end)
 				
@@ -4574,6 +4617,7 @@ function CommandSystem.new()
 		cache = Cache.new(),
 		location = localPlayer,
 		parser = Parser.new(),
+		logger = Logger.new(),
 		inputBinder = InputBinder.new(),
 		sandbox = Sandbox.new(getfenv()), -- just gets the global environment, so chill dude
 		commands = Commands or {},
@@ -4612,7 +4656,7 @@ function CommandSystem.new()
 			end
 		end
 	end
-
+	
 	self.windowHandler = WindowHandler.new()
 	self.notificationHandler = NotificationHandler.new(self.windowHandler, callback)
 	if not TERMINAL_MODE then
@@ -4628,7 +4672,7 @@ function CommandSystem.new()
 		self.terminal = Terminal.new(self.windowHandler, callback)
 		self.terminal.defaultCallback = callback
 	end
-
+	
 	return self
 end
 
