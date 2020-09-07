@@ -10,7 +10,7 @@ local AUTO_TEXT_RESIZE = true
 local TERMINAL_MODE = false
 local OPEN_HOTKEY = Enum.KeyCode.BackSlash
 
-local VERSION = "v0.4.0"
+local VERSION = "v0.4.2"
 
 local startTime = tick()
 
@@ -4376,6 +4376,35 @@ function Parser.new(options)
 end
 
 
+local Plugin = {}
+Plugin.__index = Plugin
+
+function Plugin:setEnvironment(environmentVariables)
+	local pluginEnvironment = getfenv(self.process)
+	for name, value in pairs(environmentVariables) do
+		pluginEnvironment[name] = value
+	end
+end
+
+function Plugin:execute(...)
+	local response = {pcall(self.process, ...)}
+	
+	local success = response[1]
+	local returns = {select(2, unpack(response))}
+	
+	return success, returns
+end
+
+function Plugin.new(name, process)
+	local self = setmetatable({
+		name = name,
+		process = process
+	}, Plugin)
+	
+	return self
+end
+
+
 local CommandSystem = {}
 CommandSystem.__index = CommandSystem
 
@@ -4607,6 +4636,17 @@ function CommandSystem:executeTree(tree)
 	end
 end
 
+function CommandSystem:addPlugin(plugin)
+	self.plugins[plugin.name] = plugin
+	
+	plugin:setEnvironment(self)
+	local success, result = plugin:execute()
+	
+	if not success then
+		self:error(("Unable to run %s plugin"):format(plugin.name))
+	end
+end
+
 function CommandSystem:handleCall(message)
 	local tree = self.parser:parse(message)
 	self:executeTree(tree)
@@ -4621,6 +4661,7 @@ function CommandSystem.new()
 		inputBinder = InputBinder.new(),
 		sandbox = Sandbox.new(getfenv()), -- just gets the global environment, so chill dude
 		commands = Commands or {},
+		plugins = {},
 		playerTypes = PlayerTypes,
 		argumentTypes = ArgumentTypes,
 		classes = {
