@@ -10,7 +10,7 @@ local AUTO_TEXT_RESIZE = true
 local TERMINAL_MODE = false
 local OPEN_HOTKEY = Enum.KeyCode.BackSlash
 
-local VERSION = "v0.4.2"
+local VERSION = "v0.4.3"
 
 local startTime = tick()
 
@@ -2008,6 +2008,78 @@ local Commands = {
 }
 
 
+local SignalConnection = {}
+SignalConnection.__index = SignalConnection
+
+function SignalConnection:disconnect()
+	self.signal:disconnect(self.connectionId)
+end
+
+function SignalConnection:run(...)
+	if self.alive and (not self.suspendedUntil or tick() >= self.suspendedUntil) then
+		pcall(self.callback, ...)
+	end
+end
+
+function SignalConnection:suspend(duration)
+	self.suspendedUntil = math.max(self.suspendedUntil, tick() + duration)
+end
+
+function SignalConnection.new(signal, connectionId, callback)
+	local self = setmetatable({
+		signal = signal,
+		connectionId = connectionId,
+		callback = callback,
+		alive = true,
+		suspendedUntil = 0
+	}, SignalConnection)
+	
+	return self
+end
+
+
+local Signal = {}
+Signal.__index = Signal
+
+function Signal:disconnect(connectionId)
+	local connection = self.connections[connectionId]
+	connection.alive = false
+	self.connections[connectionId] = nil
+end
+
+function Signal:connect(callback)
+	local connectionId = #self.connections + 1
+	local connection = SignalConnection.new(self, connectionId, callback)
+	
+	self.connections[connectionId] = connection
+	return connection
+end
+
+function Signal:fire(...)
+	self._bindable:Fire(...)
+end
+
+function Signal:wait()
+	return self._bindable:Wait()
+end
+
+function Signal.new(name)
+	local self = setmetatable({
+		name = name,
+		connections = {},
+		_bindable = Instance.new("BindableEvent")
+	}, Signal)
+	
+	self._bindable.Event:Connect(function(...)
+		for _, connection in pairs(self.connections) do
+			connection:run(...)
+		end
+	end)
+	
+	return self
+end
+
+
 local ThemeSyncer = {}
 ThemeSyncer.__index = ThemeSyncer
 
@@ -2549,7 +2621,7 @@ function MouseHover:build()
 	shadow.Position = UDim2.new(0.5, 0, 0.5, 0)
 	shadow.AnchorPoint = Vector2.new(0.5, 0.5)
 	shadow.BackgroundTransparency = 1
-	shadow.ImageTransparency = 0.75
+	shadow.ImageTransparency = 0.8
 	self.handler.themeSyncer:bindElement(shadow, "Visible", "shadow")
 	
 	corner.Name = "Corner"
@@ -2828,9 +2900,9 @@ function Notification:display()
 		
 		wait(0.1)
 		if clicked and not closing then
-			self._clicked:Fire()
+			self.clicked:fire()
 		else
-			self._closed:Fire()
+			self.closed:fire()
 		end
 	end
 	
@@ -3013,12 +3085,9 @@ function Notification.new(handler, title, text, duration)
 		title = title or "Notification",
 		text = text or "Hello world!",
 		duration = duration or 10,
-		_clicked = Instance.new("BindableEvent"),
-		_closed = Instance.new("BindableEvent")
+		clicked = Signal.new("clicked"),
+		closed = Signal.new("closed")
 	}, Notification)
-	
-	self.clicked = self._clicked.Event
-	self.closed = self._closed.Event
 	
 	self:init()
 	
@@ -3137,6 +3206,7 @@ end
 
 function Window:runOverlapping()
 	local acceptedInputs = {Enum.UserInputType.MouseButton1, Enum.UserInputType.Touch}
+	
 	local function editOverlap(input)
 		if not input or table.find(acceptedInputs, input.UserInputType) then
 			if not input or self:isOnTop(input.Position.X, input.Position.Y) then
@@ -4080,7 +4150,7 @@ function NotificationHandler.new(windowHandler)
 		windowHandler = windowHandler,
 		gui = Instance.new("Frame", windowHandler.gui),
 		themeSyncer = windowHandler.themeSyncer,
-		notifications = {}
+		notifications = {},
 	}, NotificationHandler)
 	
 	self.gui.Name = "Notifications"
@@ -4228,7 +4298,7 @@ Logger.__index = Logger
 
 function Logger:log(type, ...)
 	if self.options[type] then
-		self._logAdded:Fire(type, ...)
+		self.logAdded:fire(type, ...)
 		self.logs[type][#self.logs[type]+1] = {tick(), ...}
 	end
 end
@@ -4264,10 +4334,9 @@ function Logger.new(options)
 			join = true,
 			leave = true
 		},
-		_logAdded = Instance.new("BindableEvent")
+		logAdded = Signal.new("logAdded")
 	}, Logger)
 	
-	self.logAdded = self._logAdded.Event
 	self:init()
 	
 	return self
@@ -4647,13 +4716,14 @@ function CommandSystem:addPlugin(plugin)
 	end
 end
 
-function CommandSystem:handleCall(message)
-	local tree = self.parser:parse(message)
+function CommandSystem:handleCall(message, isChat)
+	local tree = self.parser:parse(message, isChat)
 	self:executeTree(tree)
 end
 
 function CommandSystem.new()
 	local self = setmetatable({
+		chatCommands = true,
 		cache = Cache.new(),
 		location = localPlayer,
 		parser = Parser.new(),
@@ -4665,6 +4735,8 @@ function CommandSystem.new()
 		playerTypes = PlayerTypes,
 		argumentTypes = ArgumentTypes,
 		classes = {
+			SignalConnection = SignalConnection,
+			Signal = Signal,
 			ThemeSyncer = ThemeSyncer,
 			InputBinder = InputBinder,
 			Cache = Cache,
@@ -4686,11 +4758,11 @@ function CommandSystem.new()
 		}
 	}, CommandSystem)
 	
-	local function callback(message)
+	local function callback(message, fromChat)
 		if self.parser:trim(message) ~= "" then
-			self:handleCall(message)
+			self:handleCall(message, fromChat)
 		else
-			if self.terminal then
+			if self.terminal and not fromChat then
 				self.terminal:addPrompt()
 			else
 				self.commandBar.box.Text = ""
@@ -4705,7 +4777,7 @@ function CommandSystem.new()
 		self.commandBar.defaultCallback = callback
 		
 		local notification = self.notificationHandler:addNotification("Welcome to rCMD", "Click here to open the help window", 10)
-		notification.clicked:Connect(function()
+		notification.clicked:connect(function()
 			self:executeCommandByCall("help", {}, true)
 		end)
 		notification:display()
@@ -4713,6 +4785,12 @@ function CommandSystem.new()
 		self.terminal = Terminal.new(self.windowHandler, callback)
 		self.terminal.defaultCallback = callback
 	end
+	
+	localPlayer.Chatted:Connect(function(message)
+		if self.chatCommands then
+			callback(message, true)
+		end
+	end)
 	
 	return self
 end
