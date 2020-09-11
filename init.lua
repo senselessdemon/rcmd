@@ -10,7 +10,7 @@ local AUTO_TEXT_RESIZE = true
 local TERMINAL_MODE = false
 local OPEN_HOTKEY = Enum.KeyCode.BackSlash
 
-local VERSION = "v0.4.3"
+local VERSION = "v0.4.5"
 
 local startTime = tick()
 
@@ -535,6 +535,21 @@ local Commands = {
 			commandSystem.cache:get("advertise"):Disconnect()
 			commandSystem.cache:remove("advertise")
 		end
+	},
+	
+	{
+		name = "safeChat",
+		description = "Toggles Roblox's Safe-Chat",
+		aliases = {"setSafeChat"},
+		arguments = {
+			{
+				name = "enabled",
+				type = "bool"
+			}	
+		},
+		process = function(self, arguments, commandSystem)
+			localPlayer:SetSuperSafeChat(arguments.enabled)
+		end,
 	},
 	
 	{
