@@ -1054,65 +1054,6 @@ local Commands = {
 	},
 	
 	{
-		name = "bang",
-		hidden = true, -- stfu
-		description = "I'm sorry god",
-		aliases = {"rape"},
-		arguments = {
-			{
-				name = "victim",
-				type = "player"
-			},
-			{
-				name = "speed",
-				type = "number",
-				default = 3
-			}
-		},
-		process = function(self, arguments, commandSystem)
-			if commandSystem.cache:get("bang") then
-				commandSystem.cache:remove("bang")
-			end
-			
-			local character = localPlayer.Character
-			if character then
-				local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-				local humanoid = character:FindFirstChild("Humanoid")
-				if humanoidRootPart and humanoid then
-					if humanoid.RigType == Enum.HumanoidRigType.R6 then
-						RunService.RenderStepped:Wait()
-						commandSystem.cache:set("bang", true)
-						
-						local animation = Instance.new("Animation")
-						animation.AnimationId = "rbxassetid://148840371"
-						
-						local animationTrack = humanoid:LoadAnimation(animation)
-						animationTrack:Play(0.1, 1, 1)
-						animationTrack:AdjustSpeed(arguments.speed == 0 and 3 or arguments.speed)
-						
-						local updateConnection
-						updateConnection = RunService.RenderStepped:Connnect(function()
-							if not commandSystem.cache:get("bang") then
-								updateConnection:Disconnect()
-								animationTrack:Stop()
-								animationTrack:Destroy()
-								animation:Destroy()
-							end
-							local victimCharacter = arguments.victim.Character
-							if victimCharacter and victimCharacter.PrimaryPart then
-								character:SetPrimaryPartCFrame(victimCharacter:GetPrimaryPartCFrame())
-							end
-						end)
-					end
-				end
-			end
-		end,
-		reverseProcess = function(self, arguments, commandSystem)
-			commandSystem.cache:remove("bang")
-		end
-	},
-	
-	{
 		name = "fireClickDetectors",
 		description = "Fires all the click detectors",
 		aliases = {"fireCD", "fireCDs"},
