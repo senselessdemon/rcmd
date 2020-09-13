@@ -10,7 +10,7 @@ local AUTO_TEXT_RESIZE = true
 local TERMINAL_MODE = false
 local OPEN_HOTKEY = Enum.KeyCode.BackSlash
 
-local VERSION = "v0.4.5"
+local VERSION = "v0.4.6"
 
 local startTime = tick()
 
@@ -20,6 +20,7 @@ local TeleportService = game:GetService("TeleportService")
 local NetworkClient = game:GetService("NetworkClient")
 local TweenService = game:GetService("TweenService")
 local TextService = game:GetService("TextService")
+local VirtualUser = game:GetService("VirtualUser")
 local LogService = game:GetService("LogService")
 local StarterGui = game:GetService("StarterGui")
 local RunService = game:GetService("RunService")
@@ -553,6 +554,15 @@ local Commands = {
 	},
 	
 	{
+		name = "framesPerSecond",
+		description = "Displays your FPS",
+		aliases = {"FPS"},
+		process = function(self, arguments, commandSystem)
+			commandSystem:notify("You are playing at " .. commandSystem.performanceMonitor.framesPerSecond .. " frames per second")
+		end,
+	},
+	
+	{
 		name = "mimic",
 		description = "Does a chat mimic",
 		aliases = {"copyCat"},
@@ -958,6 +968,32 @@ local Commands = {
 				end
 			else
 				commandSystem:error(("Unable to make a GET request to \"%s\""):format(arguments.url))
+			end
+		end,
+	},
+	
+	{
+		name = "chatLogs",
+		description = "Displays the chat logs",
+		aliases = {"logs"},
+		process = function(self, arguments, commandSystem)
+			local logs = {}
+			for _, log in ipairs(commandSystem.logger.logs.chat) do
+				local timestamp, player, message = unpack(log)
+				logs[#logs+1] = {("[%s]: %s"):format(tostring(player), message), timestamp}
+			end
+			local list = commandSystem:createList("Chat Logs", logs)
+			if list then
+				local addConnection = commandSystem.logger.logAdded:connect(function(type, player, message)
+					--print(type, player, message)
+					if type == "chat" then
+						list:addItem(("[%s]: %s"):format(player, message), tick())
+					end
+				end)
+				
+				list.closed:connect(function()
+					addConnection:disconnect()
+				end)
 			end
 		end,
 	},
@@ -1733,8 +1769,39 @@ local Commands = {
 			end
 		end,
 		reverseProcess = function(self, arguments, commandSystem)
-			commandSystem.cache:get("autoClick"):Disconnect()
-			commandSystem.cache:remove("autoClick")
+			if commandSystem.cache:get("autoClick") then
+				commandSystem.cache:get("autoClick"):Disconnect()
+				commandSystem.cache:remove("autoClick")
+			end
+		end
+	},
+	
+	{
+		name = "antiIdle",
+		description = "Prevents you from idling",
+		arguments = {
+			{
+				name = "enabled",
+				type = "bool"
+			},
+		},
+		process = function(self, arguments, commandSystem)
+			if commandSystem.cache:get("antiIdle") then
+				commandSystem.cache:get("antiIdle"):Disconnect()
+				commandSystem.cache:remove("antiIdle")
+			end
+			
+			commandSystem.cache:set("antiIdle", VirtualUser.Idled:Connect(function()
+				VirtualUser:Button2Down(Vector2.new(0,0), camera.CFrame)
+				wait(1)
+				VirtualUser:Button2Up(Vector2.new(0,0), camera.CFrame)
+			end))
+		end,
+		reverseProcess = function(self, arguments, commandSystem)
+			if commandSystem.cache:get("antiIdle") then
+				commandSystem.cache:get("antiIdle"):Disconnect()
+				commandSystem.cache:remove("antiIdle")
+			end
 		end
 	},
 	
@@ -1907,6 +1974,39 @@ local Commands = {
 	},
 	
 	{
+		name = "watch",
+		description = "Watches the given player",
+		aliases	 = {"spectate", "view"},
+		arguments = {
+			{
+				name = "player",
+				type = "player"
+			},
+		},
+		process = function(self, arguments, commandSystem)
+			local target = arguments.player
+			if target then
+				local character = target.Character
+				if character then
+					local humanoid = character:FindFirstChild("Humanoid")
+					if humanoid then
+						camera.CameraSubject = humanoid
+					end
+				end
+			end
+		end,
+		reverseProcess = function(self, arguments, commandSystem)
+			local character = localPlayer.Character
+			if character then
+				local humanoid = character:FindFirstChild("Humanoid")
+				if humanoid then
+					camera.CameraSubject = humanoid
+				end
+			end
+		end,
+	},
+	
+	{
 		name = "clickTeleport",
 		description = "Toggles click teleporting",
 		aliases = {"clickTP"},
@@ -1987,7 +2087,6 @@ function SignalConnection.new(signal, connectionId, callback)
 		connectionId = connectionId,
 		callback = callback,
 		alive = true,
-		suspendedUntil = 0
 	}, SignalConnection)
 	
 	return self
@@ -2074,6 +2173,45 @@ function ThemeSyncer.new(theme)
 		currentTheme = theme or Themes.light,
 		binds = {}
 	}, ThemeSyncer)
+	
+	return self
+end
+
+
+local PerformanceMonitor = {}
+PerformanceMonitor.__index = PerformanceMonitor
+
+function PerformanceMonitor:resetFrames()
+	self.frameCount = 0
+	self.intervalStart = tick()
+end
+
+function PerformanceMonitor:trackFrames()
+	self:resetFrames()
+	
+	self.connections[#self.connections+1] = RunService.Heartbeat:Connect(function()
+		local deltaTime = tick() - self.intervalStart
+		if deltaTime > self.countResetInterval then
+			self.framesPerSecond = math.floor(10 * self.frameCount / deltaTime + 0.5) / 10
+			self:resetFrames()
+		end
+		self.frameCount = self.frameCount + 1
+	end)
+end
+
+function PerformanceMonitor:init()
+	self:trackFrames()
+end
+
+function PerformanceMonitor.new()
+	local self = setmetatable({
+		framesPerSecond = 0,
+		countResetInterval = 5,
+		intervalStart = 0,
+		connections = {}
+	}, PerformanceMonitor)
+	
+	self:init()
 	
 	return self
 end
@@ -2337,7 +2475,7 @@ function Aimbot:mapWorldToScreen(...)
 end
 
 function Aimbot:distanceFromCenter(x, y)
-	return (Vector2.new(x, y) - camera.ViewpoerSize/2).magnitude
+	return (Vector2.new(x, y) - camera.ViewportSize/2).magnitude
 end
 
 function Aimbot:checkLineOfSight(part, ...)
@@ -2682,9 +2820,7 @@ function CommandBar:bind()
 		elseif (input.KeyCode == Enum.KeyCode.Return or input.KeyCode == Enum.KeyCode.Escape) and self.box.Text ~= "" then
 			if input.KeyCode == Enum.KeyCode.Return then
 				local command = self.box.Text
-				spawn(function()
-					self.defaultCallback(command)
-				end)
+				coroutine.wrap(self.defaultCallback)(command)
 			end
 			self:close()
 		elseif input.KeyCode == Enum.KeyCode.Escape then
@@ -3078,6 +3214,8 @@ function Window:minimize()
 	delay(0.15, function()
 		self.container.Visible = false
 	end)
+	
+	self.minimized:fire()
 end
 
 function Window:maximize()
@@ -3116,6 +3254,8 @@ function Window:close()
 		self.handler.dock:remove(self.name)
 	end)
 	tween:Play()
+	
+	self.closed:fire()
 end
 
 function Window:open()
@@ -3130,6 +3270,8 @@ function Window:open()
 	delay(0.1, function()
 		self.container.Visible = true
 	end)
+	
+	self.opened:fire()
 end
 
 function Window:toAbsolute(size)
@@ -3566,6 +3708,9 @@ function Window.new(handler, name, size)
 	local self = setmetatable({
 		handler = handler,
 		name = name,
+		opened = Signal.new("opened"),
+		closed = Signal.new("closed"),
+		minimized = Signal.new("minimized"),
 		draggable = true,
 		dragTween = false,
 		resizable = true,
@@ -4058,12 +4203,12 @@ function List:init(initialData, ...)
 		self:build(...)
 	end
 	
-	spawn(function() -- i know spawn sucks ass for performance but fight me skrub :p
+	coroutine.wrap(function()
 		for _, item in ipairs(initialData) do
 			self:addItem(unpack(item))
 			wait(0.1)
 		end
-	end)
+	end)()
 end
 
 function List:formatData(rawData)
@@ -4263,13 +4408,20 @@ function Logger:addConnection(connection)
 	self.connections[#self.connections+1] = connection
 end
 
+function Logger:addPlayer(player)
+	self:addConnection(player.Chatted:Connect(function(message)
+		self:log("chat", player, message)
+	end))
+end
+
 function Logger:init()
+	for _, player in ipairs(Players:GetPlayers()) do
+		self:addPlayer(player)
+	end
+	
 	self:addConnection(Players.PlayerAdded:Connect(function(player)
 		self:log("join", player)
-		
-		self:addConnection(player.Chatted:Connect(function(message)
-			self:log("chat", player, message)
-		end))
+		self:addPlayer(player)
 	end))
 	
 	self:addConnection(Players.PlayerRemoving:Connect(function(player)
@@ -4589,6 +4741,9 @@ function CommandSystem:executeCommand(command, processType, arguments, isNested)
 	if command.requiresTool and not getTool() then
 		return self:error("You must have a tool to use this command", true)
 	end
+	if command.terminalCommand and not self.terminal then
+		return self:error("This command requires terminal-mode to be enabled", true)
+	end
 	
 	local task = Task.new(command[processType])
 	task.yields = true
@@ -4645,7 +4800,7 @@ function CommandSystem:executeTree(tree)
 						unpack(self.parser:reconstructArguments(
 							batch.arguments,
 							2
-							))
+						))
 					)
 				end)
 				
@@ -4684,6 +4839,7 @@ function CommandSystem.new()
 		location = localPlayer,
 		parser = Parser.new(),
 		logger = Logger.new(),
+		performanceMonitor = PerformanceMonitor.new(),
 		inputBinder = InputBinder.new(),
 		sandbox = Sandbox.new(getfenv()), -- just gets the global environment, so chill dude
 		commands = Commands or {},
@@ -4694,6 +4850,7 @@ function CommandSystem.new()
 			SignalConnection = SignalConnection,
 			Signal = Signal,
 			ThemeSyncer = ThemeSyncer,
+			PerformanceMonitor = PerformanceMonitor,
 			InputBinder = InputBinder,
 			Cache = Cache,
 			ESP = ESP,
@@ -4763,6 +4920,8 @@ end)
 
 _G.rCMD = {
 	running = true,
+	bootTime = tick() - startTime,
+	commandSystem = commandSystem,
 }
 
 return commandSystem
