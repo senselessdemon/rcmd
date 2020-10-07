@@ -10,7 +10,7 @@ local AUTO_TEXT_RESIZE = true
 local TERMINAL_MODE = false
 local OPEN_HOTKEY = Enum.KeyCode.BackSlash
 
-local VERSION = "v0.4.6"
+local VERSION = "v0.4.7"
 
 local startTime = tick()
 
@@ -107,7 +107,7 @@ function attach(target)
 					math.random(-100, 100) / 200,
 					math.random(-100, 100) / 200,
 					math.random(-100, 100) / 200
-					))
+				))
 				
 				local connection
 				local lastCycle = 0
