@@ -405,21 +405,21 @@ local ArgumentTypes = {
 	
 	{
 		calls = {"player(s)", "target(s)", "players", "targets"},
-		process = function(argument, commandSystem)
+		process = function(argument, modifier, commandSystem)
 			return commandSystem:getTargets(argument)
 		end
 	},
 	
 	{
 		calls = {"player", "target", "individual"},
-		process = function(argument, commandSystem)
+		process = function(argument, modifier, commandSystem)
 			return commandSystem:getTargets(argument)[1]
 		end
 	},
 	
 	{
 		calls = {"color", "colour"},
-		process = function(argument, commandSystem)
+		process = function(argument, modifier, commandSystem)
 			local raw = argument and argument.raw or ""
 			if raw:sub(1, 1) == "#" then
 				return Color3.fromHex(raw)
@@ -437,7 +437,7 @@ local ArgumentTypes = {
 	{
 		calls = {"theme"},
 		expandable = true,
-		process = function(argument, commandSystem)
+		process = function(argument, modifier, commandSystem)
 			for name, theme in pairs(Themes) do
 				if name:lower() == argument.raw:lower() then
 					return theme
@@ -450,13 +450,30 @@ local ArgumentTypes = {
 	
 	{
 		calls = {"command", "cmd"},
-		process = function(argument, commandSystem)
+		process = function(argument, modifier, commandSystem)
 			local command = commandSystem:findCommand(argument.raw or "")
 			if not command then
 				commandSystem:notify(("\"%s\" is not a valid command"):format(argument.raw))
 				return commandSystem.commands[1]
 			else
 				return command
+			end
+		end
+	},
+	
+	{
+		calls = {"enum", "enumItem"},
+		process = function(argument, modifier, commandSystem)
+			local enumType = modifier
+			local enumItem
+			
+			for index, item in ipairs(Enum[enumType]:GetEnumItems()) do
+				local elements = tostring(item):split(".")
+				local name = elements[#elements]
+				
+				if argument.raw:lower() == name:lower():sub(1, #argument.raw) or (tonumber(argument.raw) and tonumber(argument.raw) == index) then
+					return item
+				end
 			end
 		end
 	},
@@ -4469,6 +4486,19 @@ function Parser:reconstructArguments(arguments, index)
 	return table.concat(segments, self.options.splitKey)
 end
 
+function Parser:splitArgumentType(argument)
+	local argumentType = argument
+	local typeModifier
+	
+	if argument:find("<") and argument:sub(#argument) == ">" then
+		argumentType = argumentType:sub(1, argument:find("<")-1)
+		typeModifier = argument:sub(argument:find("<")+1, #argument-1)
+	end
+	
+	return argumentType, typeModifier
+    end
+end
+
 function Parser:parse(data, requiresPrefix)
 	local tree = {
 		raw = data,
@@ -4680,15 +4710,17 @@ function CommandSystem:parseArguments(command, arguments, coreArguments)
 			}
 		end
 		
+		local parentType, subType = self.parser:splitArgumentType(argument.type)
+		
 		for _, argumentType in ipairs(self.argumentTypes) do
 			for _, call in ipairs(argumentType.calls or {}) do
-				if argument.type:lower() == call:lower() then
+				if parentType:lower() == call:lower() then
 					local givenArgument = arguments[index]
 					if index == #command.arguments and argumentType.expandable then
 						givenArgument.raw = self.parser:reconstructArguments(arguments, index)
 					end
 					
-					local success, response = pcall(argumentType.process, givenArgument, self)
+					local success, response = pcall(argumentType.process, givenArgument, subType, self)
 					
 					if success then
 						givenArgument = response
