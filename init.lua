@@ -10,7 +10,7 @@ local AUTO_TEXT_RESIZE = true
 local TERMINAL_MODE = false
 local OPEN_HOTKEY = Enum.KeyCode.BackSlash
 
-local VERSION = "v0.4.7"
+local VERSION = "v0.4.8"
 
 local startTime = tick()
 
@@ -464,7 +464,7 @@ local ArgumentTypes = {
 	{
 		calls = {"enum", "enumItem"},
 		process = function(argument, modifier, commandSystem)
-			local enumType = modifier
+			local enumType, defaultItem = unpack(modifier:gsub(" ", ""):split(","))
 			local enumItem
 			
 			for index, item in ipairs(Enum[enumType]:GetEnumItems()) do
@@ -475,8 +475,23 @@ local ArgumentTypes = {
 					return item
 				end
 			end
+			
+			return defaultItem and enumType[defaultItem] or enumType:GetEnumItems()[1]
 		end
 	},
+	
+	{
+		calls = {"options", "selection", "enumeration"},
+		process = function(argument, modifier, commandSystem)
+			local options = modifier:gsub(" ", ""):split(",")
+			
+			for _, option in ipairs(options) do
+				if argument.raw:lower() == option:lower():sub(1, #argument.raw) then
+					return option
+				end
+			end
+		end
+	}
 }
 
 
@@ -1022,6 +1037,23 @@ local Commands = {
 			commandSystem:executeCommandByCall("loadScript", {
 				url = "https://raw.githubusercontent.com/Nootchtai/FrostHook_Spy/master/Spy.lua"
 			}, true)
+		end
+	},
+	
+	{
+		name = "alignCommandBar",
+		terminalCommand = false,
+		aliases = {"alignCmdBar"},
+		arguments = {
+			{
+				name = "alignment",
+				type = "Enum<VerticalAlignment>"
+			}
+		},
+		process = function(self, arguments, commandSystem)
+			if commandSystem.commandBar then
+				commandSystem.commandBar.alignment = arguments.alignment
+			end
 		end
 	},
 	
@@ -4496,7 +4528,6 @@ function Parser:splitArgumentType(argument)
 	end
 	
 	return argumentType, typeModifier
-    end
 end
 
 function Parser:parse(data, requiresPrefix)
@@ -4773,8 +4804,10 @@ function CommandSystem:executeCommand(command, processType, arguments, isNested)
 	if command.requiresTool and not getTool() then
 		return self:error("You must have a tool to use this command", true)
 	end
-	if command.terminalCommand and not self.terminal then
+	if command.terminalCommand == false and not self.terminal then
 		return self:error("This command requires terminal-mode to be enabled", true)
+	elseif command.terminalCommand == true and self.terminal then
+		return self:error("This command requires terminal-mode to be disabled", true)
 	end
 	
 	local task = Task.new(command[processType])
@@ -4832,7 +4865,7 @@ function CommandSystem:executeTree(tree)
 						unpack(self.parser:reconstructArguments(
 							batch.arguments,
 							2
-						))
+							))
 					)
 				end)
 				
