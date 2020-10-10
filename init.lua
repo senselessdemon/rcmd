@@ -10,7 +10,7 @@ local AUTO_TEXT_RESIZE = true
 local TERMINAL_MODE = false
 local OPEN_HOTKEY = Enum.KeyCode.BackSlash
 
-local VERSION = "v0.4.8"
+local VERSION = "v0.4.9"
 
 local startTime = tick()
 
@@ -1060,7 +1060,7 @@ local Commands = {
 	{
 		name = "walkSpeed",
 		description = "Sets the local character's speed",
-		aliases = {"ws", "speed"},
+		aliases = {"ws", "speed", "wSpeed"},
 		arguments = {
 			{
 				name = "speed",
@@ -1091,7 +1091,7 @@ local Commands = {
 	{
 		name = "jumpPower",
 		description = "Sets the local character's jump power",
-		aliases = {"jp"},
+		aliases = {"jp", "jPower"},
 		arguments = {
 			{
 				name = "power",
@@ -4804,9 +4804,9 @@ function CommandSystem:executeCommand(command, processType, arguments, isNested)
 	if command.requiresTool and not getTool() then
 		return self:error("You must have a tool to use this command", true)
 	end
-	if command.terminalCommand == false and not self.terminal then
+	if command.terminalCommand == true and not self.terminal then
 		return self:error("This command requires terminal-mode to be enabled", true)
-	elseif command.terminalCommand == true and self.terminal then
+	elseif command.terminalCommand == false and self.terminal then
 		return self:error("This command requires terminal-mode to be disabled", true)
 	end
 	
