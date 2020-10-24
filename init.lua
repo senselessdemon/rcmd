@@ -4983,13 +4983,14 @@ pcall(function()
 	commandSystem.windowHandler.gui.Parent = CoreGui
 end)
 
-_G.rCMD = {
+local rCMD = {
 	running = true,
 	bootTime = tick() - startTime,
 	commandSystem = commandSystem,
 }
 
-return commandSystem
+_G.rCMD = rCMD
+return rCMD
 
 -- if you were looking for any of that obfuscated getfenv stuff, you just got caught lacking
 -- this script doesnt have any of that stuff, so chill
