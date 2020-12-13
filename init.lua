@@ -10,7 +10,7 @@ local AUTO_TEXT_RESIZE = true
 local TERMINAL_MODE = false
 local OPEN_HOTKEY = Enum.KeyCode.BackSlash
 
-local VERSION = "v0.5.2"
+local VERSION = "v0.5.3"
 
 local startTime = tick()
 
@@ -1029,7 +1029,7 @@ local Commands = {
 				local timestamp, player, message = unpack(log)
 				logs[#logs+1] = {("[%s]: %s"):format(tostring(player), message), timestamp}
 			end
-			
+
 			local list = commandSystem:createList("Chat Logs", logs)
 			if list then
 				local addConnection = commandSystem.logger.logAdded:connect(function(type, player, message)
@@ -1037,14 +1037,14 @@ local Commands = {
 						list:addItem(("[%s]: %s"):format(tostring(player), message), tick())
 					end
 				end)
-			
+
 				list.window.closed:connect(function()
 					addConnection:disconnect()
 				end)
 			end
 		end,
 	},
-	
+
 	{
 		name = "joinLogs",
 		description = "Displays the join logs",
@@ -1070,7 +1070,7 @@ local Commands = {
 			end
 		end,
 	},
-	
+
 	{
 		name = "leaveLogs",
 		description = "Displays the leave logs",
@@ -2221,7 +2221,7 @@ end
 function Signal:connect(callback)
 	local connectionId = #self.connections + 1
 	local connection = SignalConnection.new(self, connectionId, callback)
-	
+
 	self.connections[connectionId] = connection
 	return connection
 end
@@ -2878,6 +2878,211 @@ function MouseHover.new(handler)
 	}, MouseHover)
 
 	self:init()
+
+	return self
+end
+
+
+local Menu = {}
+Menu.__index = Menu
+
+function Menu:close()
+	self.container.Visible = false
+end
+
+function Menu:open()
+	local contentSize = self.listLayout.AbsoluteContentSize
+	self.container.Size = UDim2.new(0, contentSize.X+self.outline, 0, contentSize.Y+self.outline)
+	for _, option in ipairs(self.data) do
+		option.textLabel.TextTransparency = 1
+	end
+	self.container.Visible = true
+	for _, option in ipairs(self.data) do
+		TweenService:Create(option.textLabel, TweenInfo.new(0.5), {
+			TextTransparency = 0
+		}):Play()
+		wait(0.1)
+	end
+end
+
+function Menu:getBounds(object, text, maxSize)
+	return TextService:GetTextSize(
+		text,
+		object.TextSize,
+		object.Font,
+		maxSize or Vector2.new(
+			self.options.Size.X.Offset,
+			9e6
+		)
+	)
+end
+
+function Menu:connectBoundsUpdate(object, callback)
+	local function callbackProxy(...)
+		callback(object, ...)
+		--self:updateSize()
+	end
+
+	object:GetPropertyChangedSignal("Text"):Connect(callbackProxy)
+	object:GetPropertyChangedSignal("TextSize"):Connect(callbackProxy)
+
+	if AUTO_TEXT_RESIZE then
+		self.options:GetPropertyChangedSignal("AbsoluteSize"):Connect(callbackProxy)
+	end
+
+	callbackProxy()
+end
+
+function Menu:addOption(text)
+	if not text then
+		return
+	end
+
+	local container = Instance.new("TextButton", self.options)
+	local textLabel = Instance.new("TextLabel", container)
+	local corner = Instance.new("UICorner", container)
+
+	container.Name = #self.options:GetChildren()
+	container.Text = ""
+	container.BorderSizePixel = 0
+	container.Size = UDim2.new(1, 0, 0, 25)
+	self.handler.themeSyncer:bindElement(container, "BackgroundColor3", "background")
+
+	textLabel.Name = #self.options:GetChildren()
+	textLabel.Text = text
+	textLabel.TextSize = self.textSize or 14
+	textLabel.Size = UDim2.new(1, -10, 1, -10)
+	textLabel.Position = UDim2.new(0.5, 0, 0.5, 0)
+	textLabel.AnchorPoint = Vector2.new(0.5, 0.5)
+	textLabel.Font = Enum.Font.Gotham
+	textLabel.TextXAlignment = Enum.TextXAlignment.Left
+	textLabel.TextYAlignment = Enum.TextYAlignment.Center
+	textLabel.BackgroundTransparency = 1
+	textLabel.TextTransparency = 1
+	self.handler.themeSyncer:bindElement(textLabel, "TextColor3", "text")
+
+	corner.Name = "Corner"
+	self.handler.themeSyncer:bindElement(corner, "CornerRadius", "roundness")
+
+	self:connectBoundsUpdate(textLabel, function()
+		local bounds = self:getBounds(textLabel, textLabel.Text)
+		container.Size = UDim2.new(1, 0, 0, bounds.Y+5)
+		textLabel.TextScaled = not textLabel.TextScaled
+		textLabel.TextScaled = not textLabel.TextScaled
+	end)
+	
+	container.MouseButton1Click:Connect(function()
+		self:close()
+		self.clicked:fire(text)
+	end)
+	
+	TweenService:Create(textLabel, TweenInfo.new(0.5), {
+		TextTransparency = 0
+	}):Play()
+	
+	self.data[#self.data+1] = {
+		text = text,
+		container = container,
+		textLabel = textLabel,
+		corner = corner
+	}
+
+	return container
+end
+
+function Menu:build(size, position)
+	local container = Instance.new("Frame", self.handler.gui)
+	local window = Instance.new("Frame", container)
+	local options = Instance.new("Frame", window)
+	local corner = Instance.new("UICorner", window)
+	local listLayout = Instance.new("UIListLayout", options)
+	local shadow = Instance.new("ImageLabel", window)
+
+	container.Name = self.name or "Menu"
+	container.BackgroundTransparency = 1
+	container.ZIndex = 100
+	container.Size = size or UDim2.new(0, 150, 0, 30)
+	container.Position = position or UDim2.new(
+		0, (camera.ViewportSize.X - container.AbsoluteSize.X) / 2,
+		0, (camera.ViewportSize.Y - container.AbsoluteSize.Y) / 2
+	)
+
+	window.Name = "Content"
+	window.ZIndex = 2
+	window.Size = UDim2.new(1, 0, 1, 0)
+	window.BackgroundTransparency = 0.025
+	window.BorderSizePixel = 0
+	self.handler.themeSyncer:bindElement(window, "BackgroundColor3", "background")
+	self.handler.themeSyncer:bindElement(window, "BackgroundTransparency", "transparency")
+
+	options.Name = "Options"
+	options.BackgroundTransparency = 1
+	options.Size = UDim2.new(1, -self.outline, 1, -self.outline)
+	options.Position = UDim2.new(0.5, 0, 0.5, 0)
+	options.AnchorPoint = Vector2.new(0.5, 0.5)
+
+	corner.Name = "Corner"
+	self.handler.themeSyncer:bindElement(corner, "CornerRadius", "roundness")
+
+	shadow.Name = "Shadow"
+	shadow.Image = "rbxassetid://1113384364"
+	shadow.ScaleType = Enum.ScaleType.Slice
+	shadow.SliceCenter = Rect.new(50, 50, 50, 50)
+	shadow.Size = UDim2.new(1, 80, 1, 80)
+	shadow.Position = UDim2.new(0.5, 0, 0.5, 0)
+	shadow.AnchorPoint = Vector2.new(0.5, 0.5)
+	shadow.BackgroundTransparency = 1
+	shadow.ImageTransparency = 0.75
+	self.handler.themeSyncer:bindElement(shadow, "Visible", "shadow")
+
+	listLayout.Name = "ListLayout"
+	listLayout.Padding = UDim.new(0, 1)
+	listLayout.FillDirection = Enum.FillDirection.Vertical
+	listLayout.SortOrder = Enum.SortOrder.Name
+	listLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+
+	local toAdd = {
+		container = container,
+		window = window,
+		options = options,
+		shadow = shadow,
+		corner = corner,
+		listLayout = listLayout,
+	}
+
+	for name, object in pairs(toAdd) do
+		self[name] = object
+	end
+end
+
+function Menu:display(position)
+	position = Vector2.new(
+		position.X.Scale*camera.ViewportSize.X + position.X.Offset,
+		position.Y.Scale*camera.ViewportSize.X + position.Y.Offset
+	)
+	self.container.Position = UDim2.new(0, position.X, 0, position.Y)
+	self:open()
+end
+
+function Menu:init(options)
+	if not self.container then
+		self:build()
+	end
+	for _, option in ipairs(options or {}) do
+		self:addOption(option)
+	end
+	self:close()
+end
+
+function Menu.new(handler, options)
+	local self = setmetatable({
+		handler = handler,
+		outline = 5,
+		data = {},
+		clicked = Signal.new("clicked")
+	}, Menu)
+
+	self:init(options)
 
 	return self
 end
@@ -4383,6 +4588,13 @@ WindowHandler.__index = WindowHandler
 
 function WindowHandler:addWindow(name, ...)
 	local window = Window.new(self, name, ...)
+	window.header.InputBegan:Connect(function(input, gameProcessed)
+		if input.UserInputType == Enum.UserInputType.MouseButton2 then
+			self.windowMenu.window = window
+			wait()
+			self.windowMenu:display(UDim2.new(0, input.Position.X, 0, input.Position.Y))
+		end
+	end)
 	self.windows[name] = window
 	self.dock:add(name, function()
 		window:open()
@@ -4408,6 +4620,45 @@ function WindowHandler.new(parent, theme)
 
 	if not self.mouseHover then
 		self.mouseHover = MouseHover.new(self)
+	end
+	if not self.windowMenu then
+		self.windowMenu = Menu.new(self, {"Restore", "Minimize", "Maximize", "Close"})
+		self.windowMenu.clicked:connect(function(button)
+			local window = self.windowMenu.window
+			if window then
+				if button == "Restore" then
+					if window.maximized then
+						window:maximize()
+					end
+				elseif button == "Minimize" then
+					if not window.maximized then
+						window:maximize()
+					end
+				elseif button == "Minimize" then
+					window:minimize()
+				elseif button == "Close" then
+					window:close()
+				end
+			end
+			self.windowMenu.window = nil
+		end)
+
+		local acceptedInputs = {Enum.UserInputType.MouseButton1, Enum.UserInputType.MouseButton2, Enum.UserInputType.Touch}
+		UserInputService.InputBegan:Connect(function(input, gameProcessed)
+			if self.windowMenu.container.Visible and table.find(acceptedInputs, input.UserInputType) then
+				local position = Vector2.new(input.Position.X, input.Position.Y)
+
+				local absolutePosition, absoluteSize = self.windowMenu.container.AbsolutePosition, self.windowMenu.container.AbsoluteSize
+				local endPoint = absolutePosition + absoluteSize
+
+				if not ((position.X > absolutePosition.X and position.Y > absolutePosition.Y) and
+					(position.X > endPoint.X and position.Y > endPoint.Y)
+					) then
+					wait()
+					self.windowMenu:close()
+				end
+			end
+		end)
 	end
 	if not self.dock then
 		self.dock = Dock.new(self)
@@ -4988,6 +5239,7 @@ function CommandSystem.new()
 			ESP = ESP,
 			Aimbot = Aimbot,
 			MouseHover = MouseHover,
+			Menu = Menu,
 			CommandBar = CommandBar,
 			Notification = Notification,
 			Window = Window,
@@ -5036,7 +5288,7 @@ function CommandSystem.new()
 			callback(message, true)
 		end
 	end)
-	
+
 	for _, command in pairs(self.commands) do
 		if command.init then
 			local task = Task.new(command.init)
@@ -5045,7 +5297,7 @@ function CommandSystem.new()
 			task.errorHandler = function(err)
 				self:error(("Unable to initialize command: %s"):format(tostring(err)))
 			end
-			
+
 			local taskId = self.sandbox:addTask(task)
 			local response = {task:run(command, self)}
 		end
