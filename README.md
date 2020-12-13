@@ -1,4 +1,4 @@
-<center><img src="https://raw.githubusercontent.com/senselessdemon/rcmd/master/icon.png" width="30%" height="30%"></center>
+<p align="center"><img src="https://raw.githubusercontent.com/senselessdemon/rcmd/master/icon.png" width="30%" height="30%"></p>
 <div align="center">
 	<a href="https://discord.io/demonden">
 		<img src="https://img.shields.io/badge/discord-server-blue.svg" alt="Discord" />
