@@ -934,7 +934,7 @@ local Commands = {
 						local didParse, parseResult = pcall(loadstring, code)
 
 						if didParse then
-							local didExecute, executeResult = pcall(parseResult)
+							local didExecute, executeResult = pcall(parseResult, commandSystem)
 
 							if didExecute then
 								if executeResult and executeResult ~= "" then
@@ -972,7 +972,7 @@ local Commands = {
 			local didParse, parseResult = pcall(loadstring, arguments.code)
 
 			if didParse then
-				local didExecute, executeResult = pcall(parseResult)
+				local didExecute, executeResult = pcall(parseResult, commandSystem)
 
 				if didExecute then
 					if executeResult and executeResult ~= "" then
@@ -1002,7 +1002,7 @@ local Commands = {
 			if didGet then
 				local didParse, parseResult = pcall(loadstring, arguments.code)
 				if didParse then
-					local didExecute, executeResult = pcall(parseResult)
+					local didExecute, executeResult = pcall(parseResult, commandSystem)
 					if didExecute then
 						if executeResult and executeResult ~= "" then
 							commandSystem:notify(tostring(executeResult))
