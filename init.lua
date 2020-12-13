@@ -10,7 +10,7 @@ local AUTO_TEXT_RESIZE = true
 local TERMINAL_MODE = false
 local OPEN_HOTKEY = Enum.KeyCode.BackSlash
 
-local VERSION = "v0.5.8"
+local VERSION = "v0.5.9"
 
 local startTime = tick()
 
@@ -4856,7 +4856,7 @@ local Parser = {}
 Parser.__index = Parser
 
 function Parser:trim(str)
-	return str:gsub("^%s*(.-)%s*$", "%1")
+	return str:match("^%s*(.-)%s*$")
 end
 
 function Parser:reconstructArguments(arguments, index)
@@ -4888,13 +4888,16 @@ function Parser:splitBatch(rawBatch)
 	
 	for i = 1, #overrideSplit do
 		local overrideSegment = overrideSplit[i]
-		if i % 2 == 1 then
-			local split = overrideSegment:split(self.options.splitKey)
-			for _, splitSegment in ipairs(split) do
-				batchElements[#batchElements+1] = splitSegment
+		overrideSegment = self:trim(overrideSegment)
+		if overrideSegment ~= "" then
+			if i % 2 == 1 then
+				local split = overrideSegment:split(self.options.splitKey)
+				for _, splitSegment in ipairs(split) do
+					batchElements[#batchElements+1] = splitSegment
+				end
+			else
+				batchElements[#batchElements+1] = overrideSegment
 			end
-		else
-			batchElements[#batchElements+1] = overrideSegment
 		end
 	end
 	
