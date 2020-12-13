@@ -1,4 +1,4 @@
-<h1 align="center">rCMD</h1>
+<center><img src="https://raw.githubusercontent.com/senselessdemon/rcmd/master/icon.png" width="30%" height="30%"></center>
 <div align="center">
 	<a href="https://discord.io/demonden">
 		<img src="https://img.shields.io/badge/discord-server-blue.svg" alt="Discord" />
@@ -7,6 +7,7 @@
 		<img src="https://img.shields.io/badge/roblox-profile-red.svg" alt="Discord" />
 	</a>
 </div>
+
 rCMD is a command executor and framework for use on the Roblox platform. It is meant to run at level 6, but can run on any level (with the drawback of some features). It features a wide variety of commands, and an object-oriented structure for a strong structure as well as the ease of future mantainance.
 It's very simple to use. You can use either the entire script in your executor, or simply use a loadstring.
 
