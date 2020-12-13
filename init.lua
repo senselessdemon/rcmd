@@ -325,7 +325,7 @@ local PlayerTypes = {
 			return targets
 		end
 	},
-	
+
 	{
 		calls = {"bacons", "baconHairs"},
 		process = function(command, parameter)
@@ -339,7 +339,7 @@ local PlayerTypes = {
 			return targets
 		end
 	},
-	
+
 	{
 		calls = {"nearest"},
 		process = function(command, parameter)
@@ -366,7 +366,7 @@ local PlayerTypes = {
 			return targets
 		end
 	},
-	
+
 	{
 		calls = {"farthest"},
 		process = function(command, parameter)
@@ -437,7 +437,7 @@ local PlayerTypes = {
 			return targets
 		end
 	},
-	
+
 	{
 		calls = {"accountAge", "age"},
 		process = function(command, parameter)
@@ -689,6 +689,38 @@ local Commands = {
 		process = function(self, arguments, commandSystem)
 			commandSystem:notify("You are playing at " .. commandSystem.performanceMonitor.framesPerSecond .. " frames per second")
 		end,
+	},
+
+	{
+		name = "capFPS",
+		description = "Throttles your FPS",
+		aliases = {"throttleFPS", "setFPS"},
+		arguments = {
+			{
+				name = "fps",
+				type = "int",
+			}
+		},
+		process = function(self, arguments, commandSystem)
+			local existingCap = commandSystem.cache:get("fpsCap")
+			if existingCap then
+				existingCap:Disconnect()
+				commandSystem.cache:remove("mimic")
+			end
+
+			local maxFps = arguments.fps
+			commandSystem.cache:set("fpsCap", RunService.RenderStepped:Connect(function()
+				local start = tick()
+				repeat until (start + 1/maxFps) < tick()
+			end))
+		end,
+		reverseProcess = function(self, arguments, commandSystem)
+			local cap = commandSystem.cache:get("fpsCap")
+			if cap then
+				cap:Disconnect()
+				commandSystem.cache:remove("mimic")
+			end
+		end
 	},
 
 	{
@@ -1192,9 +1224,35 @@ local Commands = {
 
 			local list = commandSystem:createList("Client Logs", logs)
 			if list then
-				local addConnection = commandSystem.logger.logAdded:connect(function(type, player)
+				local addConnection = commandSystem.logger.logAdded:connect(function(type, message)
 					if type == "client" then
-						list:addItem(tostring(player), tick())
+						list:addItem(tostring(message), tick())
+					end
+				end)
+
+				list.window.closed:connect(function()
+					addConnection:disconnect()
+				end)
+			end
+		end,
+	},
+
+	{
+		name = "systemLogs",
+		description = "Displays rCMD's logs",
+		aliases = {"rLogs", "rCMDLogs"},
+		process = function(self, arguments, commandSystem)
+			local logs = {}
+			for _, log in ipairs(commandSystem.logger.logs.system) do
+				local timestamp, message = unpack(log)
+				logs[#logs+1] = {tostring(message), timestamp}
+			end
+
+			local list = commandSystem:createList("Client Logs", logs)
+			if list then
+				local addConnection = commandSystem.logger.logAdded:connect(function(type, message)
+					if type == "system" then
+						list:addItem(tostring(message), tick())
 					end
 				end)
 
@@ -4863,6 +4921,12 @@ function Sandbox:clearTasks()
 	end
 end
 
+function Sandbox:updateEnvironment(environment)
+	for name, variable in pairs(environment) do
+		self.environment[name] = variable
+	end
+end
+
 function Sandbox.new(environment)
 	local self = setmetatable({
 		tasks = {},
@@ -5116,15 +5180,23 @@ function CommandSystem:error(message, isEnd)
 	else
 		self:notify(message)
 	end
+	self.logger:log("system", message, true)
 end
 
-function CommandSystem:notify(message)
+function CommandSystem:notify(message, onClick)
 	if self.terminal then
 		self.terminal:addText(message)
 	else
 		local notification = self.notificationHandler:addNotification("Notification", message, 10)
+		notification.clicked:connect(function(...)
+			if onClick then
+				return onClick(...)
+			end
+			return self:executeCommandByCall("systemLogs", {}, true)
+		end)
 		notification:display()
 	end
+	self.logger:log("system", message)
 end
 
 function CommandSystem:createList(name, listData, ...)
@@ -5370,6 +5442,7 @@ function CommandSystem.new()
 		sandbox = Sandbox.new(getfenv()), -- just gets the global environment, so chill dude
 		commands = Commands or {},
 		plugins = {},
+		variables = {},
 		playerTypes = PlayerTypes,
 		argumentTypes = ArgumentTypes,
 		classes = {
@@ -5410,6 +5483,20 @@ function CommandSystem.new()
 		end
 	end
 
+	--[[self.sandbox:updateEnvironment({
+		error = function(...)
+			return self:error(...)
+		end,
+		print = function(...)
+			return self:notify(...)
+		end,
+		luaprint = function(...)
+			return print(...)
+		end,
+		debugprint = function(...)
+			return self.logger:add("system", ..., false)
+		end
+	})]]
 	self.windowHandler = WindowHandler.new()
 	self.notificationHandler = NotificationHandler.new(self.windowHandler, callback)
 	if not TERMINAL_MODE then
