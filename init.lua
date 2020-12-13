@@ -10,7 +10,7 @@ local AUTO_TEXT_RESIZE = true
 local TERMINAL_MODE = false
 local OPEN_HOTKEY = Enum.KeyCode.BackSlash
 
-local VERSION = "v0.5.7"
+local VERSION = "v0.5.8"
 
 local startTime = tick()
 
@@ -2996,16 +2996,16 @@ function Menu:addOption(text)
 		textLabel.TextScaled = not textLabel.TextScaled
 		textLabel.TextScaled = not textLabel.TextScaled
 	end)
-	
+
 	container.MouseButton1Click:Connect(function()
 		self:close()
 		self.clicked:fire(text)
 	end)
-	
+
 	TweenService:Create(textLabel, TweenInfo.new(0.5), {
 		TextTransparency = 0
 	}):Play()
-	
+
 	self.data[#self.data+1] = {
 		text = text,
 		container = container,
@@ -4820,7 +4820,7 @@ function Logger:init()
 	self:addConnection(Players.PlayerRemoving:Connect(function(player)
 		self:log("leave", player)
 	end))
-	
+
 	self:addConnection(LogService.MessageOut:Connect(function(message)
 		self:log("client", message)
 	end))
@@ -4882,6 +4882,25 @@ function Parser:splitArgumentType(argument)
 	return argumentType, typeModifier
 end
 
+function Parser:splitBatch(rawBatch)
+	local overrideSplit = rawBatch:split(self.options.overrideKey)
+	local batchElements = {}
+	
+	for i = 1, #overrideSplit do
+		local overrideSegment = overrideSplit[i]
+		if i % 2 == 1 then
+			local split = overrideSegment:split(self.options.splitKey)
+			for _, splitSegment in ipairs(split) do
+				batchElements[#batchElements+1] = splitSegment
+			end
+		else
+			batchElements[#batchElements+1] = overrideSegment
+		end
+	end
+	
+	return batchElements
+end
+
 function Parser:parse(data, requiresPrefix)
 	local tree = {
 		raw = data,
@@ -4911,7 +4930,7 @@ function Parser:parse(data, requiresPrefix)
 			coreArguments = {}
 		}
 
-		local batchElements = batch.raw:split(self.options.splitKey)
+		local batchElements = self:splitBatch(batch.raw)
 
 		local command = self:trim(batchElements[1])
 		local arguments = {select(2, unpack(batchElements))}
@@ -4956,6 +4975,7 @@ function Parser.new(options)
 			prefix = "/",
 			batchKey = "|",
 			splitKey = " ",
+			overrideKey = "\"",
 			coreArgumentPrefix = "--",
 			argumentSplitKey = ",",
 			argumentParameterKey = "-"
