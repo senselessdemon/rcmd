@@ -10,7 +10,7 @@ local AUTO_TEXT_RESIZE = true
 local TERMINAL_MODE = false
 local OPEN_HOTKEY = Enum.KeyCode.BackSlash
 
-local VERSION = "v0.5.0"
+local VERSION = "v0.5.1"
 
 local startTime = tick()
 
@@ -399,7 +399,7 @@ local ArgumentTypes = {
 		calls = {"boolean", "bool"},
 		process = function(argument)
 			argument = argument.raw:lower()
-			return (argument == "on" or argument == "true" or argument == "yes") or false
+			return (argument == "on" or argument == "true" or argument == "yes" or argument == "1") or false
 		end
 	},
 
@@ -492,18 +492,18 @@ local ArgumentTypes = {
 			end
 		end
 	},
-	
+
 	{
 		calls = {"tuple", "group"},
 		process = function(argument, modifier, commandSystem)
 			-- TODO: make tuples work
 			local options = modifier:gsub(" ", ""):split(",")
 			local tuple = {}
-			
+
 			for index, option in ipairs(options) do
 				tuple[option] = argument.segments[index]
 			end
-			
+
 			return tuple
 		end
 	}
@@ -1029,16 +1029,68 @@ local Commands = {
 				local timestamp, player, message = unpack(log)
 				logs[#logs+1] = {("[%s]: %s"):format(tostring(player), message), timestamp}
 			end
+			
 			local list = commandSystem:createList("Chat Logs", logs)
 			if list then
 				local addConnection = commandSystem.logger.logAdded:connect(function(type, player, message)
-					--print(type, player, message)
 					if type == "chat" then
-						list:addItem(("[%s]: %s"):format(player, message), tick())
+						list:addItem(("[%s]: %s"):format(tostring(player), message), tick())
+					end
+				end)
+			
+				list.window.closed:connect(function()
+					addConnection:disconnect()
+				end)
+			end
+		end,
+	},
+	
+	{
+		name = "joinLogs",
+		description = "Displays the join logs",
+		aliases = {"jlogs"},
+		process = function(self, arguments, commandSystem)
+			local logs = {}
+			for _, log in ipairs(commandSystem.logger.logs.join) do
+				local timestamp, player = unpack(log)
+				logs[#logs+1] = {tostring(player), timestamp}
+			end
+
+			local list = commandSystem:createList("Join Logs", logs)
+			if list then
+				local addConnection = commandSystem.logger.logAdded:connect(function(type, player)
+					if type == "join" then
+						list:addItem(tostring(player), tick())
 					end
 				end)
 
-				list.closed:connect(function()
+				list.window.closed:connect(function()
+					addConnection:disconnect()
+				end)
+			end
+		end,
+	},
+	
+	{
+		name = "leaveLogs",
+		description = "Displays the leave logs",
+		aliases = {"llogs"},
+		process = function(self, arguments, commandSystem)
+			local logs = {}
+			for _, log in ipairs(commandSystem.logger.logs.join) do
+				local timestamp, player = unpack(log)
+				logs[#logs+1] = {tostring(player), timestamp}
+			end
+
+			local list = commandSystem:createList("Leave Logs", logs)
+			if list then
+				local addConnection = commandSystem.logger.logAdded:connect(function(type, player)
+					if type == "leave" then
+						list:addItem(tostring(player), tick())
+					end
+				end)
+
+				list.window.closed:connect(function()
 					addConnection:disconnect()
 				end)
 			end
@@ -2169,7 +2221,7 @@ end
 function Signal:connect(callback)
 	local connectionId = #self.connections + 1
 	local connection = SignalConnection.new(self, connectionId, callback)
-
+	
 	self.connections[connectionId] = connection
 	return connection
 end
@@ -4687,7 +4739,7 @@ function CommandSystem:createList(name, listData, ...)
 			self.terminal:addText(table.concat(item, " - "))
 		end
 	else
-		List.new(self.windowHandler, name, listData, ...)
+		return List.new(self.windowHandler, name, listData, ...)
 	end
 end
 
