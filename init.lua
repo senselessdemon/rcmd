@@ -4822,8 +4822,8 @@ function Logger:init()
 	end))
 	
 	self:addConnection(LogService.MessageOut:Connect(function(message)
-		self:log("client", player)
-	end)
+		self:log("client", message)
+	end))
 end
 
 function Logger.new(options)
