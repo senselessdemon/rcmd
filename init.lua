@@ -1098,6 +1098,32 @@ local Commands = {
 	},
 
 	{
+		name = "clientLogs",
+		description = "Displays the client logs",
+		aliases = {"clogs"},
+		process = function(self, arguments, commandSystem)
+			local logs = {}
+			for _, log in ipairs(commandSystem.logger.logs.client) do
+				local timestamp, message = unpack(log)
+				logs[#logs+1] = {tostring(message), timestamp}
+			end
+
+			local list = commandSystem:createList("Client Logs", logs)
+			if list then
+				local addConnection = commandSystem.logger.logAdded:connect(function(type, player)
+					if type == "client" then
+						list:addItem(tostring(player), tick())
+					end
+				end)
+
+				list.window.closed:connect(function()
+					addConnection:disconnect()
+				end)
+			end
+		end,
+	},
+
+	{
 		name = "remoteSpy",
 		description = "Executes a remote-spy script",
 		process = function(self, arguments, commandSystem)
@@ -4794,6 +4820,10 @@ function Logger:init()
 	self:addConnection(Players.PlayerRemoving:Connect(function(player)
 		self:log("leave", player)
 	end))
+	
+	self:addConnection(LogService.MessageOut:Connect(function(message)
+		self:log("client", player)
+	end)
 end
 
 function Logger.new(options)
@@ -4801,13 +4831,17 @@ function Logger.new(options)
 		logs = {
 			chat = {},
 			join = {},
-			leave = {}
+			leave = {},
+			client = {},
+			system = {}
 		},
 		connections = {},
 		options = options or {
 			chat = true,
 			join = true,
-			leave = true
+			leave = true,
+			client = true,
+			system = true
 		},
 		logAdded = Signal.new("logAdded")
 	}, Logger)
