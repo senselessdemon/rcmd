@@ -10,7 +10,7 @@ local AUTO_TEXT_RESIZE = true
 local TERMINAL_MODE = false
 local OPEN_HOTKEY = Enum.KeyCode.BackSlash
 
-local VERSION = "v0.5.9"
+local VERSION = "v0.6.0"
 
 local startTime = tick()
 
@@ -325,6 +325,74 @@ local PlayerTypes = {
 			return targets
 		end
 	},
+	
+	{
+		calls = {"bacons", "baconHairs"},
+		process = function(command, parameter)
+			local targets = {}
+			for _, player in ipairs(Players:GetPlayers()) do
+				local character = player.Character
+				if character and character:FindFirstChild("Pal Hair") then
+					targets[#targets+1] = player
+				end
+			end
+			return targets
+		end
+	},
+	
+	{
+		calls = {"nearest"},
+		process = function(command, parameter)
+			local targets = {}
+			local localCharacter = localPlayer.Character
+			if localCharacter then
+				for i = 1, tonumber(parameter) or 1 do
+					local closestDistance, closestPlayer
+					for _, player in ipairs(Players:GetPlayers()) do
+						local character = player.Character
+						if player ~= localPlayer and not table.find(targets, player) and character and character.PrimaryPart then
+							local distance = localPlayer.DistanceFromCharacter(character.PrimaryPart.Position)
+							if not closestDistance or distance < closestDistance then
+								closestDistance = distance
+								closestPlayer = Players
+							end
+						end
+					end
+					if closestPlayer then
+						targets[#targets+1] = closestPlayer
+					end
+				end
+			end
+			return targets
+		end
+	},
+	
+	{
+		calls = {"farthest"},
+		process = function(command, parameter)
+			local targets = {}
+			local localCharacter = localPlayer.Character
+			if localCharacter then
+				for i = 1, tonumber(parameter) or 1 do
+					local farthestDistance, farthestPlayer
+					for _, player in ipairs(Players:GetPlayers()) do
+						local character = player.Character
+						if player ~= localPlayer and not table.find(targets, player) and character and character.PrimaryPart then
+							local distance = localPlayer.DistanceFromCharacter(character.PrimaryPart.Position)
+							if not farthestDistance or distance > farthestDistance then
+								farthestDistance = distance
+								farthestPlayer = Players
+							end
+						end
+					end
+					if farthestPlayer then
+						targets[#targets+1] = farthestPlayer
+					end
+				end
+			end
+			return targets
+		end
+	},
 
 	{
 		calls = {"userId"},
@@ -363,6 +431,20 @@ local PlayerTypes = {
 			local targets = {}
 			for _, player in ipairs(Players:GetPlayers()) do
 				if player.MembershipType == Enum.MembershipType.Premium then
+					targets[#targets+1] = player
+				end
+			end
+			return targets
+		end
+	},
+	
+	{
+		calls = {"accountAge", "age"},
+		process = function(command, parameter)
+			local targets = {}
+			local age = tonumber(parameter)
+			for _, player in ipairs(Players:GetPlayers()) do
+				if player.MembershipType == age then
 					targets[#targets+1] = player
 				end
 			end
@@ -3166,8 +3248,12 @@ function CommandBar:bind()
 			self:toggle()
 		elseif (input.KeyCode == Enum.KeyCode.Return or input.KeyCode == Enum.KeyCode.Escape) and self.box.Text ~= "" then
 			if input.KeyCode == Enum.KeyCode.Return then
-				local command = self.box.Text
-				coroutine.wrap(self.defaultCallback)(command)
+				if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+					self.box.Text = self.box.Text .. "\n"
+				else
+					local command = self.box.Text
+					coroutine.wrap(self.defaultCallback)(command)
+				end
 			end
 			self:close()
 		elseif input.KeyCode == Enum.KeyCode.Escape then
@@ -4885,7 +4971,7 @@ end
 function Parser:splitBatch(rawBatch)
 	local overrideSplit = rawBatch:split(self.options.overrideKey)
 	local batchElements = {}
-	
+
 	for i = 1, #overrideSplit do
 		local overrideSegment = overrideSplit[i]
 		overrideSegment = self:trim(overrideSegment)
@@ -4900,7 +4986,7 @@ function Parser:splitBatch(rawBatch)
 			end
 		end
 	end
-	
+
 	return batchElements
 end
 
