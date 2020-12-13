@@ -10,7 +10,7 @@ local AUTO_TEXT_RESIZE = true
 local TERMINAL_MODE = false
 local OPEN_HOTKEY = Enum.KeyCode.BackSlash
 
-local VERSION = "v0.5.1"
+local VERSION = "v0.5.2"
 
 local startTime = tick()
 
@@ -396,7 +396,7 @@ local ArgumentTypes = {
 	},
 
 	{
-		calls = {"boolean", "bool"},
+		calls = {"boolean", "bool", "setting"},
 		process = function(argument)
 			argument = argument.raw:lower()
 			return (argument == "on" or argument == "true" or argument == "yes" or argument == "1") or false
@@ -5036,6 +5036,20 @@ function CommandSystem.new()
 			callback(message, true)
 		end
 	end)
+	
+	for _, command in pairs(self.commands) do
+		if command.init then
+			local task = Task.new(command.init)
+			task.yields = true
+			task.thread = false
+			task.errorHandler = function(err)
+				self:error(("Unable to initialize command: %s"):format(tostring(err)))
+			end
+			
+			local taskId = self.sandbox:addTask(task)
+			local response = {task:run(command, self)}
+		end
+	end
 
 	return self
 end
