@@ -5126,7 +5126,7 @@ function Parser.new(options)
 	local self = setmetatable({
 		options = options or {
 			prefix = "/",
-			batchKey = "|",
+			batchKey = ";",
 			splitKey = " ",
 			overrideKey = "\"",
 			coreArgumentPrefix = "--",
