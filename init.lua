@@ -10,7 +10,7 @@ local AUTO_TEXT_RESIZE = true
 local TERMINAL_MODE = true
 local OPEN_HOTKEY = Enum.KeyCode.BackSlash
 
-local VERSION = "v0.6.4"
+local VERSION = "v0.6.7"
 
 local startTime = tick()
 
