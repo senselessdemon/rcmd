@@ -10,7 +10,7 @@ local AUTO_TEXT_RESIZE = true
 local TERMINAL_MODE = true
 local OPEN_HOTKEY = Enum.KeyCode.BackSlash
 
-local VERSION = "v0.6.7"
+local VERSION = "v0.6.8"
 
 local startTime = tick()
 
@@ -1995,7 +1995,7 @@ local Commands = {
 						bodyVelocity.P = 5000
 
 						local indicator = Instance.new("BoolValue", humanoidRootPart)
-						indicator.Name = 'Fly'
+						indicator.Name = "Fly"
 						indicator.Changed:connect(function(property)
 							if property then
 								local force = property and Vector3.new(9e9, 9e9, 9e9) or Vector3.new()
@@ -2010,8 +2010,8 @@ local Commands = {
 								end)
 							else
 								humanoid.PlatformStand = false
-								humanoidRootPart:FindFirstChild('BodyGyro'):Destroy()
-								humanoidRootPart:FindFirstChild('BodyVelocity'):Destroy()
+								humanoidRootPart:FindFirstChild("BodyGyro"):Destroy()
+								humanoidRootPart:FindFirstChild("BodyVelocity"):Destroy()
 
 								if indicator and indicator.Parent then
 									indicator.Value = false
