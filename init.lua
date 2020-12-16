@@ -1746,56 +1746,6 @@ local Commands = {
 	},
 
 	{
-		name = "bypass",
-		description = "Bypasses a chat message",
-		aliases = {"chatBypass"},
-		arguments = {
-			{
-				name = "message",
-				type = "raw",
-			}
-		},
-		process = function(self, arguments, commandSystem)
-			local dictionary = {
-				a = "ٴٴa",
-				b = "ٴٴb",
-				c = "ٴٴc",
-				d = "ٴٴd",
-				e = "ٴٴe",
-				f = "ٴٴf",
-				g = "ٴٴg",
-				h = "ٴٴh",
-				i = "ٴٴi",
-				j = "ٴٴj",
-				k = "ٴٴk",
-				l = "ٴٴl",
-				m = "ٴٴm",
-				n = "ٴٴn",
-				o = "ٴٴo",
-				p = "ٴٴp",
-				q = "ٴٴq",
-				r = "ٴٴr",
-				s = "ٴٴs",
-				t = "ٴٴt",
-				u = "ٴٴu",
-				v = "ٴٴv",
-				w = "ٴٴw",
-				x = "ٴٴx",
-				y = "ٴٴy",
-				z = "ٴٴz"
-			}
-
-			local message = arguments.message
-			for find, replace in pairs(dictionary) do
-				message:gsub(find, replace)
-				message:gsub(find:upper(), replace:upper())
-			end
-
-			ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(message, "All")
-		end
-	},
-
-	{
 		name = "completeNoclip",
 		description = "Fully noclips the given player(s)",
 		aliases = {"fullNoclip"},
