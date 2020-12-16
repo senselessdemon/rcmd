@@ -384,7 +384,7 @@ local PlayerTypes = {
 					for _, player in ipairs(Players:GetPlayers()) do
 						local character = player.Character
 						if player ~= localPlayer and not table.find(targets, player) and character and character.PrimaryPart then
-							local distance = localPlayer.DistanceFromCharacter(character.PrimaryPart.Position)
+							local distance = localPlayer:DistanceFromCharacter(character.PrimaryPart.Position)
 							if not closestDistance or distance < closestDistance then
 								closestDistance = distance
 								closestPlayer = Players
@@ -411,7 +411,7 @@ local PlayerTypes = {
 					for _, player in ipairs(Players:GetPlayers()) do
 						local character = player.Character
 						if player ~= localPlayer and not table.find(targets, player) and character and character.PrimaryPart then
-							local distance = localPlayer.DistanceFromCharacter(character.PrimaryPart.Position)
+							local distance = localPlayer:DistanceFromCharacter(character.PrimaryPart.Position)
 							if not farthestDistance or distance > farthestDistance then
 								farthestDistance = distance
 								farthestPlayer = Players
