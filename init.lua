@@ -10,7 +10,7 @@ local AUTO_TEXT_RESIZE = true
 local TERMINAL_MODE = false
 local OPEN_HOTKEY = Enum.KeyCode.BackSlash
 
-local VERSION = "v0.6.1"
+local VERSION = "v0.6.2"
 
 local startTime = tick()
 
@@ -19,6 +19,7 @@ local UserInputService = game:GetService("UserInputService")
 local TeleportService = game:GetService("TeleportService")
 local NetworkClient = game:GetService("NetworkClient")
 local TweenService = game:GetService("TweenService")
+local SoundService = game:GetService("SoundService")
 local TextService = game:GetService("TextService")
 local VirtualUser = game:GetService("VirtualUser")
 local LogService = game:GetService("LogService")
@@ -177,6 +178,8 @@ local Themes = {
 		textBox = Color3.fromRGB(84, 84, 86),
 		boxPrefix = Color3.fromRGB(0, 0, 0),
 		suggestion = Color3.fromRGB(174, 174, 178),
+		--controlBackgroundTransparency = 0,
+		--controlIconTransparency = 1,
 		transparency = 0.01,
 		shadow = true,
 	},
@@ -191,6 +194,8 @@ local Themes = {
 		textBox = Color3.fromRGB(216, 216, 220),
 		boxPrefix = Color3.fromRGB(255, 255, 255),
 		suggestion = Color3.fromRGB(174, 174, 178),
+		--controlBackgroundTransparency = 0,
+		--controlIconTransparency = 1,
 		transparency = 0.01,
 		shadow = true,
 	},
@@ -205,6 +210,8 @@ local Themes = {
 		textBox = Color3.fromRGB(241, 250, 140),
 		boxPrefix = Color3.fromRGB(255, 121, 198),
 		suggestion = Color3.fromRGB(174, 174, 178),
+		--controlBackgroundTransparency = 0,
+		--controlIconTransparency = 1,
 		transparency = 0.01,
 		shadow = true,
 	},
@@ -219,6 +226,8 @@ local Themes = {
 		textBox = Color3.fromRGB(155, 78, 85),
 		boxPrefix = Color3.fromRGB(127, 92, 194),
 		suggestion = Color3.fromRGB(174, 174, 178),
+		--controlBackgroundTransparency = 0,
+		--controlIconTransparency = 1,
 		transparency = 0.01,
 		shadow = true,
 	},
@@ -233,6 +242,8 @@ local Themes = {
 		textBox = Color3.fromRGB(140, 225, 213),
 		boxPrefix = Color3.fromRGB(98, 120, 131),
 		suggestion = Color3.fromRGB(174, 174, 178),
+		--controlBackgroundTransparency = 0,
+		--controlIconTransparency = 1,
 		transparency = 0.01,
 		shadow = true,
 	},
@@ -247,6 +258,8 @@ local Themes = {
 		textBox = Color3.fromRGB(210, 210, 210),
 		boxPrefix = Color3.fromRGB(255, 255, 255),
 		suggestion = Color3.fromRGB(178, 178, 178),
+		--controlBackgroundTransparency = 1,
+		--controlIconTransparency = 0,
 		transparency = 0.5,
 		shadow = false,
 	},
@@ -261,6 +274,8 @@ local Themes = {
 		textBox = Color3.fromRGB(210, 210, 210),
 		boxPrefix = Color3.fromRGB(255, 255, 255),
 		suggestion = Color3.fromRGB(178, 178, 178),
+		--controlBackgroundTransparency = 0,
+		--controlIconTransparency = 1,
 		transparency = 0,
 		shadow = true,
 	},
@@ -275,6 +290,8 @@ local Themes = {
 		textBox = Color3.fromRGB(210, 210, 210),
 		boxPrefix = Color3.fromRGB(255, 255, 255),
 		suggestion = Color3.fromRGB(178, 178, 178),
+		--controlBackgroundTransparency = 0,
+		--controlIconTransparency = 1,
 		transparency = 0,
 		shadow = true,
 	},
@@ -2314,7 +2331,39 @@ local Commands = {
 			end
 		end,
 	},
-
+	
+	{
+		name = "playingSounds",
+		description = "Finds a list of playing sounds",
+		aliases = {"grabAudio", "grabSounds", "playingAudio"},
+		process = function(self, arguments, commandSystem)
+			local sounds = {}
+			local locations = {
+				Workspace,
+				SoundService,
+				playerGui
+			}
+			
+			local function scanInstance(instance)
+				for _, child in ipairs(instance:GetDescendants()) do
+					if child:IsA("Sound") and child.Playing then
+						sounds[#sounds+1] = child
+					end
+				end
+			end
+			
+			for _, location in ipairs(locations) do
+				scanInstance(location)
+			end
+			
+			local list = {}
+			for _, sound in ipairs(sounds) do
+				list[#list+1] = {sound.SoundId, sound:GetFullName()}
+			end
+			commandSystem:createList("Sounds", list)
+		end,
+	},
+	
 	{
 		name = "mlgMode",
 		description = "Toggles MLG mode",
@@ -3775,7 +3824,7 @@ function Window:toAbsolute(size)
 	return size
 end
 
-function Window:isOnTop(x, y)
+function Window:isOnTop(x, y, additional)
 	for _, window in pairs(self.handler.windows) do
 		local position = window.container.AbsolutePosition
 		local size = window.container.AbsoluteSize
@@ -3789,6 +3838,22 @@ function Window:isOnTop(x, y)
 			end
 		end
 	end
+	
+	--[[if additional then
+		for _, element in pairs(additional) do
+			local position = element.AbsolutePosition
+			local size = element.AbsoluteSize
+
+			local xInbound = x > position.X and x - position.X < size.X
+			local yInbound = y > position.Y and y - position.Y < size.Y
+
+			if xInbound and yInbound and element ~= self.container then
+				if element.ZIndex > self.container.ZIndex then
+					return false
+				end
+			end
+		end
+	end]]
 
 	return true
 end
@@ -4079,7 +4144,11 @@ function Window:build(size, position)
 	local closeButton = Instance.new("TextButton", controls)
 	local minimizeButton = Instance.new("TextButton", controls)
 	local maximizeButton = Instance.new("TextButton", controls)
-
+	
+	--[[local closeIcon = Instance.new("ImageLabel", closeButton)
+	local minimizeIcon = Instance.new("ImageLabel", minimizeButton)
+	local maximizeIcon = Instance.new("ImageLabel", maximizeButton)]]
+	
 	local closeCorner = Instance.new("UICorner", closeButton)
 	local minimizeCorner = Instance.new("UICorner", minimizeButton)
 	local maximizeCorner = Instance.new("UICorner", maximizeButton)
@@ -4088,16 +4157,46 @@ function Window:build(size, position)
 	closeButton.Size = UDim2.new(0, 15, 0, 15)
 	closeButton.BackgroundColor3 = Color3.fromRGB(252, 87, 83)
 	closeButton.Text = ""
+	--self.handler.themeSyncer:bindElement(closeButton, "BackgroundTransparency", "controlBackgroundTransparency")
 
 	minimizeButton.Name = "2"
 	minimizeButton.Size = UDim2.new(0, 15, 0, 15)
 	minimizeButton.BackgroundColor3 = Color3.fromRGB(253, 188, 64)
 	minimizeButton.Text = ""
+	--self.handler.themeSyncer:bindElement(minimizeButton, "BackgroundTransparency", "controlBackgroundTransparency")
 
 	maximizeButton.Name = "3"
 	maximizeButton.Size = UDim2.new(0, 15, 0, 15)
 	maximizeButton.BackgroundColor3 = Color3.fromRGB(51, 199, 72)
 	maximizeButton.Text = ""
+	--self.handler.themeSyncer:bindElement(maximizeButton, "BackgroundTransparency", "controlBackgroundTransparency")
+	
+	--[[closeIcon.Name = "Icon"
+	closeIcon.Size = UDim2.new(1, -5, 1, -5)
+	closeIcon.Position = UDim2.new(0.5, 0, 0.5, 0)
+	closeIcon.AnchorPoint = Vector2.new(0.5, 0.5)
+	closeIcon.BackgroundTransparency = 1
+	closeIcon.Image = "rbxassetid://6095654890"
+	self.handler.themeSyncer:bindElement(closeIcon, "ImageColor3", "text")
+	self.handler.themeSyncer:bindElement(closeIcon, "ImageTransparency", "controlIconTransparency")
+	
+	minimizeIcon.Name = "Icon"
+	minimizeIcon.Size = UDim2.new(1, -5, 1, -5)
+	minimizeIcon.Position = UDim2.new(0.5, 0, 0.5, 0)
+	minimizeIcon.AnchorPoint = Vector2.new(0.5, 0.5)
+	minimizeIcon.BackgroundTransparency = 1
+	minimizeIcon.Image = "rbxassetid://6095654175"
+	self.handler.themeSyncer:bindElement(minimizeIcon, "ImageColor3", "text")
+	self.handler.themeSyncer:bindElement(minimizeIcon, "ImageTransparency", "controlIconTransparency")
+	
+	maximizeIcon.Name = "Icon"
+	maximizeIcon.Size = UDim2.new(1, -5, 1, -5)
+	maximizeIcon.Position = UDim2.new(0.5, 0, 0.5, 0)
+	maximizeIcon.AnchorPoint = Vector2.new(0.5, 0.5)
+	maximizeIcon.BackgroundTransparency = 1
+	maximizeIcon.Image = "rbxassetid://6095655417"
+	self.handler.themeSyncer:bindElement(maximizeIcon, "ImageColor3", "text")
+	self.handler.themeSyncer:bindElement(maximizeIcon, "ImageTransparency", "controlIconTransparency")]]
 
 	self.handler.themeSyncer:bindElement(closeCorner, "CornerRadius", "controlRoundness")
 	self.handler.themeSyncer:bindElement(minimizeCorner, "CornerRadius", "controlRoundness")
@@ -4644,7 +4743,7 @@ function List:addItem(text, onHover)
 		hoverIndicator.Value = onHover
 
 		self.handler.mouseHover:addElement(textLabel, nil, function(x, y)
-			return self.window:isOnTop(x, y)
+			return self.window:isOnTop(x, y, self.handler.windowMenu and {self.handler.windowMenu.container})
 		end)
 	end
 
