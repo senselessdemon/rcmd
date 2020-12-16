@@ -511,7 +511,7 @@ local ArgumentTypes = {
 	},
 
 	{
-		calls = {"boolean", "bool", "setting"},
+		calls = {"boolean", "bool", "setting", "onOrOff", "trueOrFalse", "yesOrNo"},
 		process = function(argument)
 			argument = argument.raw:lower()
 			return (argument == "on" or argument == "true" or argument == "yes" or argument == "1") or false
