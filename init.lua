@@ -1785,9 +1785,10 @@ local Commands = {
 				z = "ٴٴz"
 			}
 
-			local message = arguments.message:lower()
+			local message = arguments.message
 			for find, replace in pairs(dictionary) do
 				message:gsub(find, replace)
+				message:gsub(find:upper(), replace:upper())
 			end
 
 			ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(message, "All")
