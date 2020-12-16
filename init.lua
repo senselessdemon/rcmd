@@ -10,7 +10,7 @@ local AUTO_TEXT_RESIZE = true
 local TERMINAL_MODE = false
 local OPEN_HOTKEY = Enum.KeyCode.BackSlash
 
-local VERSION = "v0.6.2"
+local VERSION = "v0.6.3"
 
 local startTime = tick()
 
@@ -290,6 +290,22 @@ local Themes = {
 		textBox = Color3.fromRGB(210, 210, 210),
 		boxPrefix = Color3.fromRGB(255, 255, 255),
 		suggestion = Color3.fromRGB(178, 178, 178),
+		--controlBackgroundTransparency = 0,
+		--controlIconTransparency = 1,
+		transparency = 0,
+		shadow = true,
+	},
+
+	hacker = {
+		controlAlignment = Enum.HorizontalAlignment.Right,
+		controlRoundness = UDim.new(0, 0),
+		roundness = UDim.new(0, 0),
+		background = Color3.fromRGB(5, 5, 5),
+		headerBackground = Color3.fromRGB(0, 0, 0),
+		text = Color3.fromRGB(0, 255, 0),
+		textBox = Color3.fromRGB(0, 170, 0),
+		boxPrefix = Color3.fromRGB(0, 240, 0),
+		suggestion = Color3.fromRGB(0, 100, 0),
 		--controlBackgroundTransparency = 0,
 		--controlIconTransparency = 1,
 		transparency = 0,
@@ -1730,6 +1746,55 @@ local Commands = {
 	},
 
 	{
+		name = "bypass",
+		description = "Bypasses a chat message",
+		aliases = {"chatBypass"},
+		arguments = {
+			{
+				name = "message",
+				type = "raw",
+			}
+		},
+		process = function(self, arguments, commandSystem)
+			local dictionary = {
+				a = "ٴٴa",
+				b = "ٴٴb",
+				c = "ٴٴc",
+				d = "ٴٴd",
+				e = "ٴٴe",
+				f = "ٴٴf",
+				g = "ٴٴg",
+				h = "ٴٴh",
+				i = "ٴٴi",
+				j = "ٴٴj",
+				k = "ٴٴk",
+				l = "ٴٴl",
+				m = "ٴٴm",
+				n = "ٴٴn",
+				o = "ٴٴo",
+				p = "ٴٴp",
+				q = "ٴٴq",
+				r = "ٴٴr",
+				s = "ٴٴs",
+				t = "ٴٴt",
+				u = "ٴٴu",
+				v = "ٴٴv",
+				w = "ٴٴw",
+				x = "ٴٴx",
+				y = "ٴٴy",
+				z = "ٴٴz"
+			}
+
+			local message = arguments.message:lower()
+			for find, replace in pairs(dictionary) do
+				message:gsub(find, replace)
+			end
+
+			ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(message, "All")
+		end
+	},
+
+	{
 		name = "completeNoclip",
 		description = "Fully noclips the given player(s)",
 		aliases = {"fullNoclip"},
@@ -2331,7 +2396,7 @@ local Commands = {
 			end
 		end,
 	},
-	
+
 	{
 		name = "playingSounds",
 		description = "Finds a list of playing sounds",
@@ -2343,7 +2408,7 @@ local Commands = {
 				SoundService,
 				playerGui
 			}
-			
+
 			local function scanInstance(instance)
 				for _, child in ipairs(instance:GetDescendants()) do
 					if child:IsA("Sound") and child.Playing then
@@ -2351,11 +2416,11 @@ local Commands = {
 					end
 				end
 			end
-			
+
 			for _, location in ipairs(locations) do
 				scanInstance(location)
 			end
-			
+
 			local list = {}
 			for _, sound in ipairs(sounds) do
 				list[#list+1] = {sound.SoundId, sound:GetFullName()}
@@ -2363,7 +2428,7 @@ local Commands = {
 			commandSystem:createList("Sounds", list)
 		end,
 	},
-	
+
 	{
 		name = "mlgMode",
 		description = "Toggles MLG mode",
@@ -3838,7 +3903,7 @@ function Window:isOnTop(x, y, additional)
 			end
 		end
 	end
-	
+
 	--[[if additional then
 		for _, element in pairs(additional) do
 			local position = element.AbsolutePosition
@@ -4144,11 +4209,11 @@ function Window:build(size, position)
 	local closeButton = Instance.new("TextButton", controls)
 	local minimizeButton = Instance.new("TextButton", controls)
 	local maximizeButton = Instance.new("TextButton", controls)
-	
+
 	--[[local closeIcon = Instance.new("ImageLabel", closeButton)
 	local minimizeIcon = Instance.new("ImageLabel", minimizeButton)
 	local maximizeIcon = Instance.new("ImageLabel", maximizeButton)]]
-	
+
 	local closeCorner = Instance.new("UICorner", closeButton)
 	local minimizeCorner = Instance.new("UICorner", minimizeButton)
 	local maximizeCorner = Instance.new("UICorner", maximizeButton)
@@ -4170,7 +4235,7 @@ function Window:build(size, position)
 	maximizeButton.BackgroundColor3 = Color3.fromRGB(51, 199, 72)
 	maximizeButton.Text = ""
 	--self.handler.themeSyncer:bindElement(maximizeButton, "BackgroundTransparency", "controlBackgroundTransparency")
-	
+
 	--[[closeIcon.Name = "Icon"
 	closeIcon.Size = UDim2.new(1, -5, 1, -5)
 	closeIcon.Position = UDim2.new(0.5, 0, 0.5, 0)
