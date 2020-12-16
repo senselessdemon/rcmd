@@ -7,10 +7,10 @@ if _G.rCMD and _G.rCMD.running then
 end
 
 local AUTO_TEXT_RESIZE = true
-local TERMINAL_MODE = false
+local TERMINAL_MODE = true
 local OPEN_HOTKEY = Enum.KeyCode.BackSlash
 
-local VERSION = "v0.6.3"
+local VERSION = "v0.6.4"
 
 local startTime = tick()
 
@@ -2426,35 +2426,6 @@ local Commands = {
 				list[#list+1] = {sound.SoundId, sound:GetFullName()}
 			end
 			commandSystem:createList("Sounds", list)
-		end,
-	},
-
-	{
-		name = "mlgMode",
-		description = "Toggles MLG mode",
-		aliases = {"mlg"},
-		arguments = {
-			{
-				name = "enabled",
-				type = "boolean"
-			}	
-		},
-		process = function(self, arguments, commandSystem)
-			if arguments.enabled then 
-				local music = Instance.new("Sound", workspace)
-				music.SoundId = "rbxassetid://234298689"
-				music:Play()
-				commandSystem.cache:set("mlg", music)
-				commandSystem:executeCommandByCall("esp", {enabled = true})
-				commandSystem:executeCommandByCall("aimbot", {enabled = true})
-			else
-				local existingMlg = commandSystem.cache:get("mlg")
-				if existingMlg then
-					existingMlg:Destroy()
-				end
-				commandSystem:executeCommandByCall("esp", {enabled = false})
-				commandSystem:executeCommandByCall("aimbot", {enabled = false})
-			end
 		end,
 	},
 }
