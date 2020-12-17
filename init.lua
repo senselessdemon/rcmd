@@ -1,4 +1,14 @@
 -- SenselessDemon
+-- rCMD.lua
+-- Main file for the rCMD execution system
+
+-- This source file is part of the Swift.org open source project
+
+-- Copyright (c) 2020 - 2021 SenselessDemon and other contributors of rCMD
+-- Licensed under Apache License v2.0
+
+-- See https://github.com/senselessdemon/rcmd/LICENSE for license information
+-- See https://github.com/senselessdemon/rcmd/contributors for a list of contributors
 
 local runningArguments = {...}
 
@@ -7,10 +17,10 @@ if _G.rCMD and _G.rCMD.running then
 end
 
 local AUTO_TEXT_RESIZE = true
-local TERMINAL_MODE = true
+local TERMINAL_MODE = false
 local OPEN_HOTKEY = Enum.KeyCode.BackSlash
 
-local VERSION = "v0.6.9"
+local VERSION = "v0.7.0"
 
 local startTime = tick()
 
@@ -48,6 +58,7 @@ OPEN_HOTKEY = runningArguments[2] == nil and OPEN_HOTKEY or runningArguments[2]
 
 function getIdentity()
 	local currentIdentity = 1
+	
 	local messageConnection = LogService.MessageOut:Connect(function(message)
 		for identity in message:gmatch("Current identity is (%d+)") do
 			currentIdentity = identity
@@ -56,6 +67,7 @@ function getIdentity()
 
 	currentIdentity = nil
 	printidentity()
+	
 	repeat wait() until currentIdentity
 	messageConnection:Disconnect()
 
@@ -64,6 +76,7 @@ end
 
 function getExecutor()
 	local executor = "unknown"
+	
 	if syn then
 		executor = "Synapse X"
 	elseif proto or pebc_execute then
@@ -73,6 +86,7 @@ function getExecutor()
 	elseif secure_load then
 		execseutor = "Sentinel"
 	end
+	
 	return executor
 end
 
@@ -335,11 +349,13 @@ local PlayerTypes = {
 		calls = {"others", "everyoneElse", "@s"},
 		process = function(command, parameter)
 			local targets = {}
+			
 			for _, player in ipairs(Players:GetPlayers()) do
 				if player ~= localPlayer then
 					targets[#targets+1] = player
 				end
 			end
+			
 			return targets
 		end
 	},
@@ -349,12 +365,14 @@ local PlayerTypes = {
 		process = function(command, parameter)
 			local players = Players:GetPlayers()
 			local targets = {}
+			
 			for i = 1, tonumber(parameter) or 1 do
 				local choice
 				repeat 
 					choice = players[math.random(1, #players)]
 				until not table.find(targets, choice)
 			end
+			
 			return targets
 		end
 	},
@@ -363,12 +381,14 @@ local PlayerTypes = {
 		calls = {"bacons", "baconHairs"},
 		process = function(command, parameter)
 			local targets = {}
+			
 			for _, player in ipairs(Players:GetPlayers()) do
 				local character = player.Character
 				if character and character:FindFirstChild("Pal Hair") then
 					targets[#targets+1] = player
 				end
 			end
+			
 			return targets
 		end
 	},
@@ -378,12 +398,16 @@ local PlayerTypes = {
 		process = function(command, parameter)
 			local targets = {}
 			local localCharacter = localPlayer.Character
+			
 			if localCharacter then
 				for i = 1, tonumber(parameter) or 1 do
 					local closestDistance, closestPlayer
+					
 					for _, player in ipairs(Players:GetPlayers()) do
 						local character = player.Character
+						
 						if player ~= localPlayer and not table.find(targets, player) and character and character.PrimaryPart then
+							
 							local distance = localPlayer:DistanceFromCharacter(character.PrimaryPart.Position)
 							if not closestDistance or distance < closestDistance then
 								closestDistance = distance
@@ -391,11 +415,13 @@ local PlayerTypes = {
 							end
 						end
 					end
+					
 					if closestPlayer then
 						targets[#targets+1] = closestPlayer
 					end
 				end
 			end
+			
 			return targets
 		end
 	},
@@ -405,13 +431,17 @@ local PlayerTypes = {
 		process = function(command, parameter)
 			local targets = {}
 			local localCharacter = localPlayer.Character
+			
 			if localCharacter then
 				for i = 1, tonumber(parameter) or 1 do
 					local farthestDistance, farthestPlayer
+					
 					for _, player in ipairs(Players:GetPlayers()) do
 						local character = player.Character
+						
 						if player ~= localPlayer and not table.find(targets, player) and character and character.PrimaryPart then
 							local distance = localPlayer:DistanceFromCharacter(character.PrimaryPart.Position)
+							
 							if not farthestDistance or distance > farthestDistance then
 								farthestDistance = distance
 								farthestPlayer = Players
@@ -423,6 +453,7 @@ local PlayerTypes = {
 					end
 				end
 			end
+			
 			return targets
 		end
 	},
@@ -438,11 +469,13 @@ local PlayerTypes = {
 		calls = {"group"},
 		process = function(command, parameter)
 			local targets = {}
+			
 			for _, player in ipairs(Players:GetPlayers()) do
 				if player:IsInGroup(tonumber(parameter)) then
 					targets[#targets+1] = player
 				end
 			end
+			
 			return targets
 		end
 	},
@@ -462,11 +495,13 @@ local PlayerTypes = {
 		calls = {"premium"},
 		process = function(command, parameter)
 			local targets = {}
+			
 			for _, player in ipairs(Players:GetPlayers()) do
 				if player.MembershipType == Enum.MembershipType.Premium then
 					targets[#targets+1] = player
 				end
 			end
+			
 			return targets
 		end
 	},
@@ -475,12 +510,14 @@ local PlayerTypes = {
 		calls = {"accountAge", "age"},
 		process = function(command, parameter)
 			local targets = {}
+			
 			local age = tonumber(parameter)
 			for _, player in ipairs(Players:GetPlayers()) do
 				if player.MembershipType == age then
 					targets[#targets+1] = player
 				end
 			end
+			
 			return targets
 		end
 	},
@@ -536,9 +573,11 @@ local ArgumentTypes = {
 		calls = {"color", "colour"},
 		process = function(argument, modifier, commandSystem)
 			local raw = argument and argument.raw or ""
+			
 			if raw:sub(1, 1) == "#" then
 				return Color3.fromHex(raw)
 			end
+			
 			if argument and #argument.segments == 3 then
 				return Color3.fromRGB(
 					tonumber(argument.segments[1]),
@@ -558,6 +597,7 @@ local ArgumentTypes = {
 					return theme
 				end
 			end
+			
 			commandSystem:notify(("\"%s\" is not a valid theme"):format(argument.raw))
 			return commandSystem.themeSyncer.currentTheme
 		end
@@ -567,6 +607,7 @@ local ArgumentTypes = {
 		calls = {"command", "cmd"},
 		process = function(argument, modifier, commandSystem)
 			local command = commandSystem:findCommand(argument.raw or "")
+			
 			if not command then
 				commandSystem:notify(("\"%s\" is not a valid command"):format(argument.raw))
 				return commandSystem.commands[1]
@@ -772,6 +813,7 @@ local Commands = {
 					connections[#connections+1] = player.Chatted:Connect(function(message)
 						if not commandSystem.cache:get("mimic") then
 							commandSystem.cache:remove("mimic")
+							
 							for _, connection in ipairs(connections) do
 								connection:Disconnect()
 							end
@@ -854,6 +896,7 @@ local Commands = {
 					"rCMD's Repository: https://github.com/senselessdemon/rcmd",
 					"Our Discord server: https://discord.io/demonden"
 				}
+				
 				commandSystem:createList("Help", help, UDim2.new(0, 375, 0, 250))
 			else
 				local command = arguments.command
@@ -869,6 +912,7 @@ local Commands = {
 					end
 					arguments[index] = display
 				end
+				
 				if arguments == {} then
 					arguments = {"none"}
 				end
@@ -882,6 +926,7 @@ local Commands = {
 					"Replicates: " .. (command.noReplication and "no" or "yes"),
 					"Reversable: " .. (command.reverseProcess and "yes" or "no")
 				}
+				
 				commandSystem:createList("Command Info", data)
 			end
 		end,
@@ -893,12 +938,14 @@ local Commands = {
 		aliases = {"cmds"},
 		process = function(self, arguments, commandSystem)
 			local listData = {}
+			
 			for _, command in pairs(commandSystem.commands) do
 				if not command.hidden then
 					--commandSystem.terminal:addText(("%s - %s"):format(command.name, command.description or "No description"))
 					listData[#listData+1] = {command.name, command.description or "No description"}
 				end
 			end
+			
 			commandSystem:createList("Commands", listData)
 		end,
 	},
@@ -912,6 +959,7 @@ local Commands = {
 				if commandSystem.location == game then
 					return {{Name="Cannot get children of this instnace"}} -- lol
 				end
+				
 				return commandSystem.location:GetChildren()
 			end
 
@@ -1146,10 +1194,13 @@ local Commands = {
 		},
 		process = function(self, arguments, commandSystem)
 			local didGet, getResult = pcall(game.HttpGet, game, arguments.url)
+			
 			if didGet then
 				local didParse, parseResult = pcall(loadstring, arguments.code)
+				
 				if didParse then
 					local didExecute, executeResult = pcall(parseResult, commandSystem)
+					
 					if didExecute then
 						if executeResult and executeResult ~= "" then
 							commandSystem:notify(tostring(executeResult))
@@ -1335,8 +1386,10 @@ local Commands = {
 		},
 		process = function(self, arguments, commandSystem)
 			local character = localPlayer.Character
+			
 			if character then
 				local humanoid = character:FindFirstChild("Humanoid")
+				
 				if humanoid then
 					commandSystem.cache:set("lastSpeed", humanoid.WalkSpeed)
 					humanoid.WalkSpeed = arguments.speed
@@ -1345,8 +1398,10 @@ local Commands = {
 		end,
 		reverseProcess = function(self, arguments, commandSystem)
 			local character = localPlayer.Character
+			
 			if character then
 				local humanoid = character:FindFirstChild("Humanoid")
+				
 				if humanoid then
 					humanoid.WalkSpeed = commandSystem.cache:get("lastSpeed") or 16
 				end
@@ -1366,8 +1421,10 @@ local Commands = {
 		},
 		process = function(self, arguments, commandSystem)
 			local character = localPlayer.Character
+			
 			if character then
 				local humanoid = character:FindFirstChild("Humanoid")
+				
 				if humanoid then
 					commandSystem.cache:set("lastJumpPower", humanoid.JumpPower)
 					humanoid.JumpPower = arguments.power
@@ -1376,8 +1433,10 @@ local Commands = {
 		end,
 		reverseProcess = function(self, arguments, commandSystem)
 			local character = localPlayer.Character
+			
 			if character then
 				local humanoid = character:FindFirstChild("Humanoid")
+				
 				if humanoid then
 					humanoid.JumpPower = commandSystem.cache:get("lastJumpPower") or 50
 				end
@@ -1398,8 +1457,10 @@ local Commands = {
 		},
 		process = function(self, arguments, commandSystem)
 			local character = localPlayer.Character
+			
 			if character then
 				local transparency = arguments.enabled and 1 or 0
+				
 				for _, child in ipairs(character:GetChildren()) do
 					if child:IsA("BasePart") then
 						child.Transparency = transparency
@@ -1410,6 +1471,7 @@ local Commands = {
 						child.Handle.Transparency = transparency
 					elseif child.Name == "Head" then
 						local face = child:FindFirstChildOfClass("Decal")
+						
 						if face then
 							face.Transparency = transparency
 						end
@@ -1442,6 +1504,7 @@ local Commands = {
 		aliases = {"nude"},
 		process = function(self, arguments, commandSystem)
 			local character = localPlayer.Character
+			
 			if character then
 				for _, child in ipairs(character:GetChildren()) do
 					if child:IsA("Clothing") or child:IsA("ShirtGraphic") then
@@ -1506,8 +1569,10 @@ local Commands = {
 		description = "Splits the local character",
 		process = function(self, arguments, commandSystem)
 			local character = localPlayer.Character
+			
 			if character then
 				local upperTorso = character:FindFirstChild("UpperTorso")
+				
 				if upperTorso then
 					upperTorso.Waist:Destroy()
 				end
@@ -1602,11 +1667,14 @@ local Commands = {
 		},
 		process = function(self, arguments, commandSystem)
 			local player = self.to
+			
 			if player then
 				local character1 = player.Character
+				
 				if character1 and character1.PrimaryPart then
 					for _, target in ipairs(arguments.from) do
 						local character2 = target.Character
+						
 						if character2 then
 							character2:SetPrimaryPartCFrame(character1.PrimaryPart.CFrame + Vector3.new(math.random(-5, 5), 0, math.random(-5, 5)))
 						end
@@ -1647,10 +1715,13 @@ local Commands = {
 		},
 		process = function(self, arguments, commandSystem)
 			local player = localPlayer
+			
 			if player then
 				local character1 = player.Character
+				
 				if character1 and character1.PrimaryPart then
 					local character2 = arguments.to.Character
+					
 					if character2 and character2.PrimaryPart then
 						character1:SetPrimaryPartCFrame(character2:GetPrimaryPartCFrame() + Vector3.new(math.random(-5, 5), 0, math.random(-5, 5)))
 					end
@@ -1671,8 +1742,10 @@ local Commands = {
 		process = function(self, arguments, commandSystem)
 			local character = localPlayer.Character
 			local victimCharacter = arguments.victim.Character
+			
 			if arguments.victim ~= localPlayer and character and victimCharacter then
 				local existingAnnoy = commandSystem.cache:get("annoy")
+				
 				if existingAnnoy then
 					existingAnnoy:Disconnect()
 					commandSystem.cache:remove("annoy")
@@ -1948,12 +2021,14 @@ local Commands = {
 		},
 		process = function(self, arguments, commandSystem)
 			local randomHook
+			
 			randomHook = hookfunction(math.random, function(a, b)
 				if a and b then
 					b = a
 				else
 					return 0
 				end
+				
 				return randomHook(a, b)
 			end)
 		end
@@ -2300,10 +2375,13 @@ local Commands = {
 		},
 		process = function(self, arguments, commandSystem)
 			local target = arguments.player
+			
 			if target then
 				local character = target.Character
+				
 				if character then
 					local humanoid = character:FindFirstChild("Humanoid")
+					
 					if humanoid then
 						camera.CameraSubject = humanoid
 					end
@@ -2312,8 +2390,10 @@ local Commands = {
 		end,
 		reverseProcess = function(self, arguments, commandSystem)
 			local character = localPlayer.Character
+			
 			if character then
 				local humanoid = character:FindFirstChild("Humanoid")
+				
 				if humanoid then
 					camera.CameraSubject = humanoid
 				end
@@ -2333,8 +2413,10 @@ local Commands = {
 		},
 		process = function(self, arguments, commandSystem)
 			if not commandSystem.cache:get("clickTeleport") then
+				
 				commandSystem.cache:set("clickTeleport", mouse.Button1Down:Connect(function()
 					local character = localPlayer.Character
+					
 					if character and character.PrimaryPart then
 						character:SetPrimaryPartCFrame(CFrame.new(mouse.Hit.p))
 					end
@@ -2471,6 +2553,7 @@ function ThemeSyncer:updateBind(bind, duration)
 			local tween = TweenService:Create(bind.object, TweenInfo.new(duration or 1, Enum.EasingStyle.Quad), {
 				[bind.property] = self.currentTheme[bind.themeElement]
 			})
+			
 			tween:Play()	
 		end
 	end
@@ -2482,6 +2565,7 @@ function ThemeSyncer:bindElement(object, property, themeElement)
 		property = property,
 		themeElement = themeElement
 	}
+	
 	self:updateBind(bind, 0)
 	self.binds[#self.binds+1] = bind
 end
@@ -2509,10 +2593,12 @@ function PerformanceMonitor:trackFrames()
 
 	self.connections[#self.connections+1] = RunService.Heartbeat:Connect(function()
 		local deltaTime = tick() - self.intervalStart
+		
 		if deltaTime > self.countResetInterval then
 			self.framesPerSecond = math.floor(10 * self.frameCount / deltaTime + 0.5) / 10
 			self:resetFrames()
 		end
+		
 		self.frameCount = self.frameCount + 1
 	end)
 end
@@ -2551,6 +2637,7 @@ function InputBinder:checkValidity(bind)
 			return false
 		end
 	end
+	
 	return true
 end
 
@@ -2563,14 +2650,17 @@ function InputBinder.new()
 
 	self.connections.inputBegan = UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		self.currentInput[#self.currentInput+1] = input.KeyCode
+		
 		for _, bind in ipairs(self.inputBinds) do
 			if self:checkValidity(bind) then
 				bind:callback()
 			end
 		end
 	end)
+	
 	self.connections.inputEnded = UserInputService.InputEnded:Connect(function(input, gameProcessed)
 		local inputIndex = table.find(self.currentInput, input.KeyCode)
+		
 		if inputIndex then
 			table.remove(self.currentInput, inputIndex)
 		end
@@ -2695,6 +2785,7 @@ function ESP:addPlayer(player)
 	if player.Character then
 		self:addCharacter(player, self.color)
 	end
+	
 	self.connections[player.Name] = player.CharacterAdded:Connect(function(character)
 		self:addCharacter(player, self.color)
 	end)
@@ -2720,6 +2811,7 @@ end
 
 function ESP:hide()
 	self.visible = false
+	
 	for _, espHolder in ipairs(self.container:GetChildren()) do
 		for _, indicator in ipairs(espHolder:GetChildren()) do
 			indicator.Transparency = 1
@@ -2729,6 +2821,7 @@ end
 
 function ESP:display()
 	self.visible = false
+	
 	for _, espHolder in ipairs(self.container:GetChildren()) do
 		for _, indicator in ipairs(espHolder:GetChildren()) do
 			indicator.Transparency = 0.3
@@ -2845,6 +2938,7 @@ function Aimbot:aimAt(x, y)
 				targetX = 0
 			end
 		end
+		
 		if x < center.X then
 			targetX = x - center.X
 			targetX = targetX / self.speed
@@ -2862,6 +2956,7 @@ function Aimbot:aimAt(x, y)
 				targetY = 0
 			end
 		end
+		
 		if x < center.Y then
 			targetY = y - center.Y
 			targetY = targetY / self.speed
@@ -2890,8 +2985,10 @@ end
 
 function Aimbot:update()
 	local target = self:getTarget()
+	
 	if target then
 		local targetPart = target:FindFirstChild(self.targetChild or "HumanoidRootPart")
+		
 		if targetPart then
 			if self:checkLineOfSight(targetPart.Position, target) and self.visiblilityCheck then
 				local point = self:mapWorldToScreen(targetPart.Position)
@@ -3095,14 +3192,17 @@ end
 function Menu:open()
 	local contentSize = self.listLayout.AbsoluteContentSize
 	self.container.Size = UDim2.new(0, contentSize.X+self.outline, 0, contentSize.Y+self.outline)
+	
 	for _, option in ipairs(self.data) do
 		option.textLabel.TextTransparency = 1
 	end
+	
 	self.container.Visible = true
 	for _, option in ipairs(self.data) do
 		TweenService:Create(option.textLabel, TweenInfo.new(0.5), {
 			TextTransparency = 0
 		}):Play()
+		
 		wait(0.1)
 	end
 end
@@ -3262,6 +3362,7 @@ function Menu:display(position)
 		position.X.Scale*camera.ViewportSize.X + position.X.Offset,
 		position.Y.Scale*camera.ViewportSize.X + position.Y.Offset
 	)
+	
 	self.container.Position = UDim2.new(0, position.X, 0, position.Y)
 	self:open()
 end
@@ -3309,10 +3410,12 @@ end
 function CommandBar:open()
 	self.opened = true
 	local alignmentData = self.alignmentData[self.alignment]
+	
 	TweenService:Create(self.container, TweenInfo.new(0.25, Enum.EasingStyle.Quint), {
 		AnchorPoint = alignmentData.anchorPoint,
 		Position = alignmentData.position
 	}):Play()
+	
 	wait(0.25)
 	self.box:CaptureFocus()
 	self.box.Text = ""
@@ -3321,10 +3424,12 @@ end
 function CommandBar:close()
 	self.opened = false
 	self.box:ReleaseFocus()
+	
 	TweenService:Create(self.container, TweenInfo.new(0.25, Enum.EasingStyle.Quint), {
 		AnchorPoint = Vector2.new(0.5, 0),
 		Position = UDim2.new(0.5, 0, 1, 0)
 	}):Play()
+	
 	self.box.Text = ""
 end
 
@@ -3349,6 +3454,7 @@ function CommandBar:bind()
 					coroutine.wrap(self.defaultCallback)(command)
 				end
 			end
+			
 			self:close()
 		elseif input.KeyCode == Enum.KeyCode.Escape then
 			self:close()
@@ -3925,6 +4031,7 @@ function Window:runDragging()
 
 		local delta = input.Position - dragStart
 		local position = UDim2.new(startPosition.X.Scale, startPosition.X.Offset + delta.X, startPosition.Y.Scale, startPosition.Y.Offset + delta.Y)
+		
 		if self.dragTween then
 			self.container:TweenPosition(position, "Out", "Back", 0.325, true)
 		else
@@ -4557,18 +4664,22 @@ function Terminal:addPrompt(givenPrefix, callback)
 	end
 
 	local inputs = {Enum.KeyCode.Return, Enum.KeyCode.ButtonA}
+	
 	inputConnections.focused = box.Focused:Connect(function()
 		focused = true
 	end)
+	
 	inputConnections.focusLost = box.FocusLost:Connect(function()
 		wait()
 		focused = false
 	end)
+	
 	inputConnections.keyCode = UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		if table.find(inputs, input.KeyCode) and focused then
 			callbackProxy()
 		end
 	end)
+	
 	inputConnections.onScreenKeyboard = box.ReturnPressedFromOnScreenKeyboard:Connect(function()
 		callbackProxy()
 	end)
@@ -4844,6 +4955,7 @@ WindowHandler.__index = WindowHandler
 
 function WindowHandler:addWindow(name, ...)
 	local window = Window.new(self, name, ...)
+	
 	window.header.InputBegan:Connect(function(input, gameProcessed)
 		if input.UserInputType == Enum.UserInputType.MouseButton2 then
 			self.windowMenu.window = window
@@ -4851,6 +4963,7 @@ function WindowHandler:addWindow(name, ...)
 			self.windowMenu:display(UDim2.new(0, input.Position.X, 0, input.Position.Y))
 		end
 	end)
+	
 	self.windows[name] = window
 	self.dock:add(name, function()
 		window:open()
@@ -4900,6 +5013,7 @@ function WindowHandler.new(parent, theme)
 		end)
 
 		local acceptedInputs = {Enum.UserInputType.MouseButton1, Enum.UserInputType.MouseButton2, Enum.UserInputType.Touch}
+		
 		UserInputService.InputBegan:Connect(function(input, gameProcessed)
 			if self.windowMenu.container.Visible and table.find(acceptedInputs, input.UserInputType) then
 				local position = Vector2.new(input.Position.X, input.Position.Y)
@@ -5124,10 +5238,12 @@ function Parser:splitBatch(rawBatch)
 
 	for i = 1, #overrideSplit do
 		local overrideSegment = overrideSplit[i]
+		
 		overrideSegment = self:trim(overrideSegment)
 		if overrideSegment ~= "" then
 			if i % 2 == 1 then
 				local split = overrideSegment:split(self.options.splitKey)
+				
 				for _, splitSegment in ipairs(split) do
 					batchElements[#batchElements+1] = splitSegment
 				end
@@ -5154,6 +5270,7 @@ function Parser:parse(data, requiresPrefix)
 
 	for batchIndex, rawBatch in ipairs(data:split(self.options.batchKey)) do
 		rawBatch = self:trim(rawBatch)
+		
 		if rawBatch:sub(1, #self.options.prefix) == self.options.prefix then
 			rawBatch = rawBatch:sub(#self.options.prefix)
 		else
@@ -5185,6 +5302,7 @@ function Parser:parse(data, requiresPrefix)
 
 				rawArgument = self:trim(rawArgument)
 				local segments = rawArgument:split(self.options.argumentSplitKey)
+				
 				for segmentIndex, rawSegment in ipairs(segments) do
 					local segment = {
 						raw = rawSegment,
@@ -5230,6 +5348,7 @@ Plugin.__index = Plugin
 
 function Plugin:setEnvironment(environmentVariables)
 	local pluginEnvironment = getfenv(self.process)
+	
 	for name, value in pairs(environmentVariables) do
 		pluginEnvironment[name] = value
 	end
@@ -5260,12 +5379,14 @@ CommandSystem.__index = CommandSystem
 function CommandSystem:error(message, isEnd)
 	if self.terminal then
 		self.terminal:addText(message)
+		
 		if isEnd then
 			self.terminal:addPrompt()
 		end
 	else
 		self:notify(message)
 	end
+	
 	self.logger:log("system", message, true)
 end
 
@@ -5274,14 +5395,17 @@ function CommandSystem:notify(message, onClick)
 		self.terminal:addText(message)
 	else
 		local notification = self.notificationHandler:addNotification("Notification", message, 10)
+		
 		notification.clicked:connect(function(...)
 			if onClick then
 				return onClick(...)
 			end
 			return self:executeCommandByCall("systemLogs", {}, true)
 		end)
+		
 		notification:display()
 	end
+	
 	self.logger:log("system", message)
 end
 
@@ -5410,6 +5534,7 @@ function CommandSystem:findCommand(call)
 					return command, responseType
 				end
 			end
+			
 			for _, opposite in ipairs(command.opposites or {}) do
 				if validateCall(opposite) then
 					return command, "reverseProcess"
@@ -5448,6 +5573,7 @@ end
 
 function CommandSystem:executeCommandByCall(call, ...)
 	local command, processType = self:findCommand(call)
+	
 	if command and processType then
 		self:executeCommand(command, processType, ...)
 	end
@@ -5456,6 +5582,7 @@ end
 function CommandSystem:executeTree(tree)
 	for _, batch in ipairs(tree.batches) do
 		local command, processType = self:findCommand(batch.command)
+		
 		if command then
 			if command[processType] then
 				local arguments = self:parseArguments(command, batch.arguments, batch.coreArguments)
@@ -5585,6 +5712,7 @@ function CommandSystem.new()
 	})]]
 	self.windowHandler = WindowHandler.new()
 	self.notificationHandler = NotificationHandler.new(self.windowHandler, callback)
+	
 	if not TERMINAL_MODE then
 		self.commandBar = CommandBar.new(self.windowHandler, OPEN_HOTKEY, callback)
 		self.commandBar.defaultCallback = callback
