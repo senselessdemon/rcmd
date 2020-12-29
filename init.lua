@@ -2,7 +2,7 @@
 -- rCMD.lua
 -- Main file for the rCMD execution system
 
--- This source file is part of the Swift.org open source project
+-- This source file is part of the rCMD open source project
 
 -- Copyright (c) 2020 - 2021 SenselessDemon and other contributors of rCMD
 -- Licensed under Apache License v2.0
