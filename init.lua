@@ -20,7 +20,7 @@ local AUTO_TEXT_RESIZE = true
 local TERMINAL_MODE = false
 local OPEN_HOTKEY = Enum.KeyCode.BackSlash
 
-local VERSION = "v0.7.2"
+local VERSION = "v0.7.3"
 
 local startTime = tick()
 
@@ -885,6 +885,24 @@ local Commands = {
 			game:Shutdown()
 		end,
 	},
+	
+	{
+		name = "fieldOfView",
+		description = "Sets the camera's field-of-view",
+		aliases = {"fov"},
+		arguments = {
+			{
+				name = "fov",
+				type = "number"
+			}
+		},
+		process = function(self, arguments, commandSystem)
+			camera.FieldOfView = arguments.fov
+		end,
+		reverseProcess = function(self, arguments, commandSystem)
+			camera.FieldOfView = 70
+		end
+	},
 
 	{
 		name = "help",
@@ -1634,6 +1652,44 @@ local Commands = {
 		process = function(self, arguments, commandSystem)
 			ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(arguments.message or "lol", "All") -- lol
 		end,
+	},
+	
+	{
+		name = "chatSpam",
+		description = "Spams the chat with the given message",
+		aliases = {"spamChat"},
+		arguments = {
+			{
+				name = "speed",
+				type = "number"
+			},
+			{
+				name = "message",
+				type = "string"
+			}
+		},
+		process = function(self, arguments, commandSystem)
+			if commandSystem.cache:get("chatSpam") then
+				commandSystem.cache:get("chatSpam"):Disconnect()
+				commandSystem.cache:remove("chatSpam")
+			end
+
+			RunService.RenderStepped:Wait()
+
+			local updateThreshold = (arguments.speed <= 0 and 5) or arguments.speed
+			local lastMessage = 0
+			commandSystem.cache:set("chatSpam", RunService.RenderStepped:Connect(function()
+				local deltaTime = tick() - lastMessage
+				if deltaTime >= updateThreshold then
+					ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(arguments.message, "All")
+					lastMessage = tick()
+				end
+			end))
+		end,
+		reverseProcess = function(self, arguments, commandSystem)
+			commandSystem.cache:get("chatSpam"):Disconnect()
+			commandSystem.cache:remove("chatSpam")
+		end
 	},
 
 	{
